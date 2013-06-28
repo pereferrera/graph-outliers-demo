@@ -37,9 +37,6 @@ function renderGraph(sys) {
 	
 	    $.each(data, function(key, val) {
 	    	    // add some nodes to the graph and watch it go...
-				if(val.uid1 == "Pere Ferrera Bertran" || val.uid2 == "Pere Ferrera Bertran") {
-					return;
-				}
 				if(!graph[val.uid1]) {
 					graph[val.uid1] = {};
 				}

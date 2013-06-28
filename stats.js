@@ -22,7 +22,7 @@ function mainStats(graph, features, rankInfo, centrality) {
 	// Influencers
 	
 	html = "<ul>";
-	for(var i = 0; i < 5; i++) {
+	for(var i = 0; i < 5 && i < rankInfo.ranks.length; i++) {
 		html += "<li>" + rankInfo.ranks[i].node + "</li>";
 	}
 	html += "</ul>";
@@ -36,7 +36,7 @@ function mainStats(graph, features, rankInfo, centrality) {
 	});
 	
 	html = "<ul>";
-	for(var i = 0; i < 5; i++) {
+	for(var i = 0; i < 5 && i < centrality.centralities.length; i++) {
 		html += "<li>" + centrality.centralities[i].node + " (" + centrality.centralities[i].centrality + " betweenness)</li>";
 	}
 	html += "</ul>";
@@ -50,7 +50,7 @@ function mainStats(graph, features, rankInfo, centrality) {
 	});
 
 	html = "<ul>";
-	for(var i = 0; i < 5; i++) {
+	for(var i = 0; i < 5 && i < features.nodeFeatures.length; i++) {
 		html += "<li>" + features.nodeFeatures[i].node + " (" + features.nodeFeatures[i].degree + " mutual friends)</li>";
 	}
 	html += "</ul>";

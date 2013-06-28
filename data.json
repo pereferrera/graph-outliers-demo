@@ -6,6 +6,37 @@
   {
     "uid1":"George",
     "uid2":"Jon"
+  },
+  {
+    "uid1":"Claire",
+    "uid2":"Anne"
+  },
+  {
+    "uid1":"George",
+    "uid2":"Paul"
+  },
+  {
+    "uid1":"Anne",
+    "uid2":"Jane"
+  },
+  {
+    "uid1":"Anne",
+    "uid2":"Paul"
+  },
+  {
+    "uid1":"Claire",
+    "uid2":"Peter"
+  },
+  {
+    "uid1":"Peter",
+    "uid2":"Jon"
+  },
+  {
+    "uid1":"George",
+    "uid2":"Frank"
+  },
+  {
+    "uid1":"Frank",
+    "uid2":"Jon"
   }
 ]
-
