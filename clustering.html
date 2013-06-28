@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<!-- Le styles -->
+<link href="css/bootstrap.css" rel="stylesheet">
+<style>
+  body {
+  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+  }
+</style>
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+<title>Social graph outlier detection tutorial</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="Datasalt Systems S.L.">
+
+<script src="lib/jquery.js"></script>
+<script src="lib/bootstrap.min.js"></script>
+<script src="lib/arbor.js"></script>
+<script src="lib/raphael-min.js"></script>
+<script src="lib/g.raphael-min.js"></script>
+<script src="lib/g.line-min.js"></script>
+<script src="graphs.js"></script>
+<script src="stats.js"></script>
+<script src="renderer.js"></script>
+
+<script>
+var graph = {};
+
+function biConnection(graph, a, b) {
+	graph[a][b] = b;
+	graph[b][a] = a;
+}
+
+function render(sys, graphType) {
+	var nodes = [ "a", "b", "c", "d", "e", "f", "g", "h"];
+
+	// create the graph as a JavaScript object
+
+	for(var node in graph) {
+		sys.pruneNode(node);
+	}
+	graph = {};
+	
+	for(var i = 0; i < nodes.length; i++) {
+		graph[nodes[i]] = {};	
+	}
+	
+	if(graphType == "A") {
+		for(var i = 0; i < nodes.length; i++) {
+			for(var j = 0; j < nodes.length; j++) {
+				biConnection(graph, nodes[i], nodes[j]);
+			}
+		}
+		
+	} else {
+		for(var i = 0; i < nodes.length; i++) {
+			biConnection(graph, nodes[i], nodes[0]); 
+		}
+	}
+	
+	// create a convenient lookup by node index
+	var nodeByIndex = {};
+	var nodes = 0;
+	for(var node in graph) {
+		nodeByIndex[nodes] = node;
+		nodes++;
+	}
+
+	var features = computeFeatures(graph);
+	var rankInfo = largestEigenValue(graph, nodeByIndex);
+	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
+	
+	mainStats(graph, features, rankInfo, centrality);
+	
+	for(var node in graph) {
+	    sys.addNode(node, {label:node});
+	    for(var neighbor in graph[node]) {
+	    	sys.addEdge(node, neighbor);
+	    }
+	}	
+}
+
+function renderGraph(sys) {
+	render(sys, "A");
+}
+</script>
+</head>
+<body>
+<div class="container">
+ 	<h1>Clustering coefficient</h1>
+ 	
+ 	<p>Clustering coefficient is a measure between [0 and 1] of how close a graph is to form a clique. Graph A is a clique, graph B is a star.</p>
+ 	
+ 	<p>The clustering coefficient of a large graph is not very useful, however the individual clustering coefficient of each egonet may be key to detect
+ 	suspicious or anomalous behavior. Highly clustered egonets might show strange spammer-like associations, suspicious trading, etc. On the other side, and
+ 	depending on the context, loosely clustered egonets might be strange as well (for instance, robot-like behavior such as port scanning).</p>
+ 	
+ 	<p>Instead of thresholding on clustering coefficients, a better technique consists in plotting a graph where X is the number of nodes in the egonet and Y the number of connections in the egonet. By running
+ 	a regression on the resultant dataset, points that deviate significantly from the regression can be detected as outliers.</p>   
+ 	 	 
+ 	<a href="javascript:renderGraph(sys, 'A');">Graph A</a> - <a href="javascript:render(sys, 'B');">Graph B</a> 
+ 	<div class="row">
+  		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
+  		<div class="span4">
+  			<div id="stats">
+  				<div id="main-stats">
+  				</div>
+  				<a href="#">Central nodes:</a>
+  				<div id="central-nodes">
+  				</div>
+  				<a href="#">Influencers:</a>
+  				<div id="influencers">
+  				</div>
+  			</div>
+  		</div>
+	</div>
+
+</div>
+</body>
+</html>
