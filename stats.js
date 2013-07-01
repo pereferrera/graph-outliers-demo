@@ -1,4 +1,4 @@
-function mainStats(graph, features, rankInfo, centrality) {
+function mainStats(graph, features, rankInfo, centrality, showCentralNodes, showCentralEdges, showInfluencers) {
 	// For inspiration: http://www.slideshare.net/persuasion/facebook-network-analysis-using-gephi-11390089
     
     // Other metrics: http://en.wikipedia.org/wiki/Distance_(graph_theory)
@@ -11,47 +11,52 @@ function mainStats(graph, features, rankInfo, centrality) {
 	html += "<tr><td># of edges: </td><td>" + features.edges + "</td></tr>";
 	html += "<tr><td>Average degree: </td><td>" + features.averageDegree + "</td></tr>";
 	html += "<tr><td>Max degree: </td><td>" + features.maxDegree + "</td></tr>";
-	html += "<tr><td>Largest eigenvalue: </td><td>" + rankInfo.eigenvalue + "</td></tr>";
+	html += "<tr><td><a href='eigenvalue.html'>Largest eigenvalue</a>: </td><td>" + rankInfo.eigenvalue + "</td></tr>";
 	html += "<tr><td># of disconnected communities: </td><td>" + findClusters(graph) + "</td></tr>";
-	html += "<tr><td>Diameter: <td>" + centrality.diameter + "</td></tr>";
-	html += "<tr><td>Clustering coefficient: <td>" + features.clusteringCoefficient + "</td></tr>";
+	html += "<tr><td>Diameter (longest shortest path): <td>" + centrality.diameter + "</td></tr>";
+	html += "<tr><td><a href='clustering.html'>Clustering coefficient</a>: <td>" + features.clusteringCoefficient + "</td></tr>";
 	html += "</tbody>";
 	
 	$("#main-stats").html(html);
 	
 	// Influencers
-	
-	html = "<ul>";
-	for(var i = 0; i < 5 && i < rankInfo.ranks.length; i++) {
-		html += "<li>" + rankInfo.ranks[i].node + "</li>";
+	if(showInfluencers) {
+		html = "<ul>";
+		for(var i = 0; i < 5 && i < rankInfo.ranks.length; i++) {
+			html += "<li>" + rankInfo.ranks[i].node + " (" + rankInfo.ranks[i].rank + " e.centrality).</li>";
+		}
+		html += "</ul>";
+		
+		$("#influencers").html(html);
 	}
-	html += "</ul>";
 	
-	$("#influencers").html(html);
-
 	// Central nodes
+	if(showCentralNodes) {
+		centrality.centralities.sort(function(a, b) {
+			return b.centrality - a.centrality;
+		});
+		
+		html = "<ul>";
+		for(var i = 0; i < 5 && i < centrality.centralities.length; i++) {
+			html += "<li>" + centrality.centralities[i].node + " (" + centrality.centralities[i].centrality + " betweenness)</li>";
+		}
+		html += "</ul>";
 	
-	centrality.centralities.sort(function(a, b) {
-		return b.centrality - a.centrality;
-	});
-	
-	html = "<ul>";
-	for(var i = 0; i < 5 && i < centrality.centralities.length; i++) {
-		html += "<li>" + centrality.centralities[i].node + " (" + centrality.centralities[i].centrality + " betweenness)</li>";
+		$("#central-nodes").html(html);
 	}
-	html += "</ul>";
 
-	$("#central-nodes").html(html);
+	// Central edges
+	if(showCentralEdges) {
+		centrality.edgeCentralities.sort(function(a, b) {
+			return b.centrality - a.centrality;
+		});
+		
+		html = "<ul>";
+		for(var i = 0; i < 5 && i < centrality.edgeCentralities.length; i++) {
+			html += "<li>" + centrality.edgeCentralities[i].from + " -> " + centrality.edgeCentralities[i].to + " (" + centrality.edgeCentralities[i].centrality + " betweenness)</li>";
+		}
+		html += "</ul>";
 	
-	// Most-connected
-	
-	features.nodeFeatures.sort(function(a, b) {
-		return b.degree - a.degree;
-	});
-
-	html = "<ul>";
-	for(var i = 0; i < 5 && i < features.nodeFeatures.length; i++) {
-		html += "<li>" + features.nodeFeatures[i].node + " (" + features.nodeFeatures[i].degree + " mutual friends)</li>";
+		$("#central-edges").html(html);
 	}
-	html += "</ul>";
 }

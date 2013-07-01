@@ -1,9 +1,17 @@
 var sys;
 
+function doMouseDown(e) {
+	// do nothing by default
+}
+
 (function($){
 
   var Renderer = function(canvas){
     var canvas = $(canvas).get(0)
+    
+	// This function must be implemented in every .html !!! Yes, I know, my javascript skills SUCK! 
+    canvas.addEventListener('click', doMouseDown);
+    
     var ctx = canvas.getContext("2d");
     var particleSystem
 

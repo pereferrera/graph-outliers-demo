@@ -38,7 +38,7 @@ function biConnection(graph, a, b) {
 }
 
 function render(sys, graphType) {
-	var nodes = [ "a", "b", "c", "d", "e", "f", "g", "h"];
+	var nodes = [ "a", "b", "c", "d", "e", "f" ];
 
 	// create the graph as a JavaScript object
 
@@ -52,16 +52,22 @@ function render(sys, graphType) {
 	}
 	
 	if(graphType == "A") {
-		for(var i = 0; i < nodes.length; i++) {
-			for(var j = 0; j < nodes.length; j++) {
-				biConnection(graph, nodes[i], nodes[j]);
-			}
-		}
+		biConnection(graph, "a", "b");
+		biConnection(graph, "a", "c");
 		
+		biConnection(graph, "b", "d");
+		
+		biConnection(graph, "c", "e");
+		biConnection(graph, "c", "f");
+
+		biConnection(graph, "a", "d");
+		biConnection(graph, "c", "e");
+		
+		biConnection(graph, "d", "f");
 	} else {
-		for(var i = 1; i < nodes.length; i++) {
-			biConnection(graph, nodes[i], nodes[0]); 
-		}
+		biConnection(graph, "a", "b");
+		biConnection(graph, "b", "c");
+
 	}
 	
 	// create a convenient lookup by node index
@@ -76,7 +82,7 @@ function render(sys, graphType) {
 	var rankInfo = largestEigenValue(graph, nodeByIndex);
 	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 	
-	mainStats(graph, features, rankInfo, centrality, false, false, false);
+	mainStats(graph, features, rankInfo, centrality, true, false, true);
 	
 	for(var node in graph) {
 	    sys.addNode(node, {label:node});
@@ -93,23 +99,33 @@ function renderGraph(sys) {
 </head>
 <body>
 <div class="container">
- 	<h1>Clustering coefficient</h1>
+ 	<h1>Influence in a graph</h1>
  	
- 	<p>The <a href='http://en.wikipedia.org/wiki/Clustering_coefficient'>clustering coefficient</a> is a measure between [0 and 1] of <strong>how close a graph is to form <a href='http://en.wikipedia.org/wiki/Clique_(graph_theory)'>a clique</a></strong>. Graph A is a clique, graph B is a star.</p>
+ 	<p>The notion of "influence" in a graph is another model of <strong>relevance</strong> or <strong>centrality</strong>, based on 
+ 	how information may randomly spread through it. A highly influential node may have few connections, but these 
+ 	connections will be highly connected to the rest of the graph. <strong>Eigenvector centrality</strong> can be used to compute
+ 	influence, and "PageRank" is a slight variation of it.</p>
 
 	<div class="alert alert-info"> 	
- 	<p>The clustering coefficient of a large graph is not very useful, however the individual clustering coefficient of each egonet may be key to detect
- 	suspicious or anomalous behavior. Always depending on the context, but generally speaking when the number of nodes in the egonet is large, <strong>highly clustered</strong> egonets are strange. They might show strange spammer-like associations (social network accounts that are artificially linked one to another), suspicious trading, etc.</p>
- 	
- 	<p>In other contexts, <strong>loosely clustered</strong> egonets may be seen as strange. On a bipartite graph of clients and resources, a loosely clustered egonet may represent an attack or massive port scanning.</p>
+
+	<p>In the graph below, even though "c" is the node with a bigger fraction of shortest paths coming through it (higher <a href='betweenness.html'>betweenness centrality</a>),
+	both "a" and "d" are more influential. In other words, <strong>an infection starting at "a" or "d" would be more difficult
+	to stop than one starting at "c".</strong></p>
+	
+ 	<p>"Influence" in a network is used to model "infection" / information spread / gossip processes.</p>
  	</div>
  	
- 	<a href="javascript:renderGraph(sys, 'A');">Graph A</a> - <a href="javascript:render(sys, 'B');">Graph B</a> 
  	<div class="row">
   		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
   		<div class="span4">
   			<div id="stats">
   				<div id="main-stats">
+  				</div>
+  				<a href="betweenness.html">Central nodes:</a>
+  				<div id="central-nodes">
+  				</div>
+  				<a href="#">Influencers:</a>
+  				<div id="influencers">
   				</div>
   			</div>
   		</div>

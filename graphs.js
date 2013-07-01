@@ -97,8 +97,6 @@ function computeFeatures(graph) {
 			c = nlinks / (degree*(degree - 1));
 		}
 		
-		console.log(nlinks + " " + degree + " " + c + " " + node);
-		
 		result.nodeFeatures[nodes] = {};
 		
 		result.nodeFeatures[nodes].degree = degree;
@@ -173,7 +171,7 @@ function largestEigenValue(graph, nodeByIndex) {
 		for(var i = 0; i < nodes; i++) {
 			vect[i] = vect[i] / norm;
 		}
-	} while(Math.abs(norm - lastNorm) > 0.1);
+	} while(Math.abs(norm - lastNorm) > 0.001);
 	// vect is the eigenvector and has the "PageRanks" too.
 	
 	for(var i = 0; i < nodes; i++) {
@@ -231,40 +229,26 @@ function matrixLog(matrix) {
 	}
 }
 
-/**
- * Multiply two matrixs.
- * 
- * @param m1
- * @param m2
- * @returns {Array}
- */
-function multiplyMatrix(m1, m2) {
-    var result = [];
-    for(var j = 0; j < m2.length; j++) {
-        result[j] = [];
-        for(var k = 0; k < m1[0].length; k++) {
-            var sum = 0;
-            for(var i = 0; i < m1.length; i++) {
-                sum += m1[i][k] * m2[j][i];
-            }
-            result[j].push(sum);
-        }
-    }
-    return result;
-}
-
 function roundToTwo(value) {
     return(Math.round(value * 100) / 100);
 }
 
 /**
+ * This method calculates both the betweenness of each node and each edge at the same
+ * time, using adjacency matrix multiplication.
+ * 
  * http://en.wikipedia.org/wiki/Betweenness_centrality
  * 
- * Fast algorithm: the gone that uses Gephi:
+ * There are other fast algorithms such as:
  * 
  * http://www.inf.uni-konstanz.de/algo/publications/b-fabc-01.pdf
  */
 function betweennessCentrality(graph, nodeByIndex, nodes) {
+	// we will also calculate per-edge betweenness centralities
+	// later we can use them for community detection
+	var totalPathsThroughEdge = allZeroMatrix(nodes);
+	var totalShortestPathsThroughEdge = allZeroMatrix(nodes);
+
 	var adjacencyMatrix = adjacencyMatrixOf(graph, nodeByIndex, nodes);
 	
 	// a matrix that will contain number of shortest paths and length of those.
@@ -274,8 +258,13 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 		for(var j = 0; j < nodes; j++) {
 			if(adjacencyMatrix[i][j]) {
 				pathsMatrix[i][j] = {};
+				pathsMatrix[i][j].paths = [];
 				pathsMatrix[i][j].length = 1;
 				pathsMatrix[i][j].count = 1;
+				// account 1-paths through edges
+				totalPathsThroughEdge[i][j] = 1;
+				totalShortestPathsThroughEdge[i][j] = 1;
+				pathsMatrix[i][j].paths.push([i, j]); 
 			}
 		}
 	}
@@ -283,28 +272,77 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	// http://1stprinciples.wordpress.com/2008/03/30/some-interesting-properties-of-adjacency-matrices/
 	convertedAdjacencyMatrix = adjacencyMatrix;
 
-	// compute all paths until length (n-1), or until full coverage
+	// compute all paths through adjacency matrix multiplication until length (n-1), or until full coverage
 	// (this will give the diameter of the graph as well).	
 	var diameter = 1;
 	var fullyCovered;
-	do {
-		fullyCovered = true;
-		convertedAdjacencyMatrix = multiplyMatrix(convertedAdjacencyMatrix, adjacencyMatrix);
-		for(var i = 0; i < nodes; i++) {
-			for(var j = 0; j < nodes; j++) {
-				if(convertedAdjacencyMatrix[i][j] && !pathsMatrix[i][j]) {
+	do { 
+	    fullyCovered = true;
+	    var result = [], edgeContributions = allZeroMatrix(nodes), m1 = adjacencyMatrix, m2 = convertedAdjacencyMatrix;
+	    
+	    for(var i = 0; i < nodes; i++) {
+	    	result[i] = [];
+	    	for(var j = 0; j < nodes; j++) {
+	    		var sum = 0, paths = [];
+	    		for(var k = 0; k < nodes; k++) {
+	    			var val = m1[i][k]  * m2[k][j];
+	    			if(val > 0) {
+	    				// sum total paths that go through these edges
+	    				// we don't know yet if these paths are shortest paths
+	    				// but we need the totals for every edge anyway
+                		edgeContributions[i][k] += m1[i][k] * m2[k][j];
+                		for(var m = 0; m < pathsMatrix[k][j].paths.length; m++) {
+    						// for each pair of edges involved in the path
+    						for(var n = 0; n < pathsMatrix[k][j].paths[m].length - 1; n++) {
+    							edgeContributions[pathsMatrix[k][j].paths[m][n]][pathsMatrix[k][j].paths[m][n + 1]]++;
+    						}
+                			var dCopy = pathsMatrix[k][j].paths[m].slice();
+                			// save the full path for calculating "shortest-path" edge contributions
+                			// if these are not real "shortest-paths" the structure will be discarded
+                			dCopy.unshift(i);
+                			paths.push(dCopy);
+                		}
+	    			}
+	    			sum += val;
+	    		}
+	    		result[i][j] = sum;
+	    		// if i and j were not yet connected and we have a path now ...
+	    		if(!pathsMatrix[i][j] && sum > 0) {
+	    			// ... here we found a new set of shortest paths 
 					pathsMatrix[i][j] = {};
 					pathsMatrix[i][j].length = diameter + 1;
-					pathsMatrix[i][j].count = convertedAdjacencyMatrix[i][j];
+					pathsMatrix[i][j].count = sum;
+					pathsMatrix[i][j].paths = paths;
+					// as soon as we can't update this matrix we will be done
 					fullyCovered = false;
-				}
+					// add "shortest-path" contributions
+					for(var p = 0; p < paths.length; p++) {
+						// for each pair of edges involved in the path
+						for(var n = 0; n < paths[p].length - 1; n++) {
+							totalShortestPathsThroughEdge[paths[p][n]][paths[p][n + 1]]++;
+						}
+					}
+	    		}
+	    	}
+	    }
+	    convertedAdjacencyMatrix = result;
+		diameter++;
+	    
+		if(!fullyCovered) {
+			for(var i = 0; i < nodes; i++) {
+		    	for(var j = 0; j < nodes; j++) {
+	    			totalPathsThroughEdge[i][j] += edgeContributions[i][j];
+		    	}
 			}
 		}
-		diameter++;
+		
 	} while(!fullyCovered && diameter < nodes);
-	
+
 	var centralities = [];
 	
+	// calculate node centralities
+	// note: this could probably be calculated incrementally before
+	// this loop is here for historical reasons and possibly better readability
 	for(var n = 0; n < nodes; n++) {
 		var nShortestPaths = 0;
 		var totalPaths = 0;
@@ -340,9 +378,45 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	}
 	
 	result = {};
-	result.diameter = diameter;
+	result.edgeCentralities = [];
+	// emit edge betweenness
+	for(var i = 0; i < nodes; i++) {
+		for(var j = 0; j < nodes; j++) {
+			if(totalPathsThroughEdge[i][j] && totalShortestPathsThroughEdge[i][j]) {
+				var obj = {};
+				obj.from = nodeByIndex[i];
+				obj.to = nodeByIndex[j];
+				obj.totalPaths = totalPathsThroughEdge[i][j];
+				obj.totalShortestPaths = totalShortestPathsThroughEdge[i][j];
+				obj.centrality = roundToTwo(totalShortestPathsThroughEdge[i][j] / totalPathsThroughEdge[i][j]); 
+				result.edgeCentralities.push(obj);
+			}
+		}
+	}
+	result.diameter = diameter - 1;
 	result.centralities = centralities;
 	return result;
+}
+
+function allZeroMatrix(nodes) {
+	var matrix = [];
+	for(var i = 0; i < nodes; i++) {
+		matrix[i] = [];
+		for(var j = 0; j < nodes; j++) {
+			matrix[i][j] = 0;
+		}
+	}
+	return matrix;
+}
+
+/**
+ * http://en.wikipedia.org/wiki/Girvan%E2%80%93Newman_algorithm
+ * 
+ * @param graph
+ * @param betweenness
+ */
+function communityDetection(graph, betweenness) {
+	
 }
 
 /**

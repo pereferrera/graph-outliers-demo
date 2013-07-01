@@ -86,7 +86,7 @@ function render(sys, graphType) {
 	var rankInfo = largestEigenValue(graph, nodeByIndex);
 	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 	
-	mainStats(graph, features, rankInfo, centrality);
+	mainStats(graph, features, rankInfo, centrality, true, false, false);
 	
 	for(var node in graph) {
 	    sys.addNode(node, {label:node});
@@ -105,18 +105,23 @@ function renderGraph(sys) {
 <div class="container">
  	<h1>Betweenness centrality</h1>
  
- 	<p>Betweenness centrality is one of the many ways of computing node relevance within a network.</p>
+ 	<p>Betweenness centrality is one of the many ways of computing node <strong>relevance</strong> within a network.</p>
  	
  	<p>Node relevance is something which cannot be easily estimated with local features such as degree. Betweenness centrality is
- 	a simple, yet computationally expensive formula which gives us the fraction of shortest paths that go through a certain node, for 
+ 	a simple, yet computationally expensive formula which gives us <strong>the fraction of shortest paths that go through a certain node</strong>, for 
  	all pairs of nodes which are not the aforementioned node.</p>
  	
- 	<p>In graph A we observe two strong central nodes, whereas graph B has no clear central nodes. Both have the same local features. Observe the variation of the <a href='eigenvalue.html'>largest eigenvalue</a> associated with the topology of each graph.</p>
+ 	<p>In <strong>graph A</strong> we observe two strong central nodes, whereas <strong>graph B</strong> has no clear central nodes. <i>Both have the same local features</i>. Observe the variation of the <a href='eigenvalue.html'>largest eigenvalue</a> associated with the topology of each graph.</p>
  	
- 	<p>Centrality in social networks can be used for "hub" detection: nodes who can easily interconnect different communities.
- 	In physical networks, this measure serves as a good metric for knowing the importance of a point in the network. Central nodes
- 	will certainly impact the service / efficiency of a network if they go down. Centrality can also be used for partitioning a graph efficiently.</p>    
- 	  
+ 	<div class="alert alert-info">
+	 	<p>Betweenness centrality in physical networks serves as a good metric for knowing the importance of a point in 
+	 	the delivery process. These nodes will impact the service and efficiency of the network if they disappear.
+	 	This metric works under the assumption that things are moved from point to point through an optimal, shortest-path. Spread 
+	 	processes such as infection, on the contrary, replicate themselves randomly, and <a href='http://www.analytictech.com/borgatti/papers/centflow.pdf'>are best described</a> by other metrics such as <a href='influence.html'>Eigenvector centrality</a>.</p>
+	 	
+	 	<p>The same concept can be applied to edges, and serves similar purposes. Central edges can be used for community detection / efficient partitioning of a graph (see the <a href='http://en.wikipedia.org/wiki/Girvan%E2%80%93Newman_algorithm'>Girvan-Newmann algorithm</a>).</p> 
+ 	</div>
+ 	 
  	<a href="javascript:renderGraph(sys, 'A');">Graph A</a> - <a href="javascript:render(sys, 'B');">Graph B</a> 
  	<div class="row">
   		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
@@ -124,11 +129,9 @@ function renderGraph(sys) {
   			<div id="stats">
   				<div id="main-stats">
   				</div>
-  				<a href="#">Central nodes:</a>
+  				<a href="betweenness.html">Central nodes:</a>
   				<div id="central-nodes">
   				</div>
-  				<a href="#">Influencers:</a>
-  				<div id="influencers">
   				</div>
   			</div>
   		</div>

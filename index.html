@@ -30,6 +30,11 @@
 <script src="renderer.js"></script>
 
 <script>
+function doMouseDown(e) {
+	var pos = $("#viewport").offset();
+	console.log(sys.nearest(arbor.Point(e.pageX-pos.left, e.pageY-pos.top)).node.name);
+}
+
 function renderGraph(sys) {
 	$.getJSON('/data.json', function(data) {
 		// create the graph as a JavaScript object
@@ -60,7 +65,7 @@ function renderGraph(sys) {
 		var rankInfo = largestEigenValue(graph, nodeByIndex);
 		var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 		
-	    mainStats(graph, features, rankInfo, centrality);
+	    mainStats(graph, features, rankInfo, centrality, true, true, true);
 	
 		// Outliers
 		
@@ -172,6 +177,7 @@ function renderGraph(sys) {
  	
 	<div class="row">
   		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
+
   		<div class="span4">
   			<div id="stats">
   				<div id="main-stats">
@@ -179,7 +185,10 @@ function renderGraph(sys) {
   				<a href="betweenness.html">Central nodes:</a>
   				<div id="central-nodes">
   				</div>
-  				<a href="#">Influencers:</a>
+  				<a href="betweenness.html">Central edges:</a>
+  				<div id="central-edges">
+  				</div>
+  				<a href="influence.html">Influencers:</a>
   				<div id="influencers">
   				</div>
   			</div>
@@ -191,14 +200,14 @@ function renderGraph(sys) {
 	
 		<p><b>X = #common friends, y = #links in egonet. Blue is actual data, green is regression line.</b></p>
 		
-		<p>This is an analysis on the <a href='clustering.html'>clustering</a> of each of your friend's egonet. The egonet is the graph of mutual friends. How are mutual friends interconnected?</p>
-		
-		<p>This graph is a regression on the size of the egonet versus the number of common friends.</p>
+		<p>This is an analysis on the <a href='clustering.html'>clustering</a> of each of your friend's egonet. The egonet of a friend is a graph of the friends you have in common. This graph is a regression on the size of the egonet versus the number of common friends.</p>
 		<ul>
 			<li><b>Higher slope:</b> These are friends whose mutual friends are highly connected. In the case of your social network, this probably means a friend whom you have only a certain group of friends in common. For instance, someone you knew in one past work.</li>
 			<li><b>Lower slope:</b> These are friends whose mutual friends are <b>not</b> highly connected. In the case of your social network, this probably means a friend whom you have several, disjoint groups of friends in common. For instance, your girlfriend/boyfriend, with whom you share several aspects of your life.</li>
 		</ul>
 	
+		<p><i>Hover on the graph for displaying each of your friend's names.</i></p>
+		
 		<div class="row">
 			<div class="span7">
 				<div id="chart">
@@ -212,9 +221,7 @@ function renderGraph(sys) {
 
 		<p><b>X = #average degree in egonet, y = largest eigenvalue of egonet. Blue is actual data, green is y = x line.</b></p>
 
-		<p>This is an analysis on the topology of each of your friend's egonet, based on the <a href='eigenvalue.html'>largest eigenvalue of it.</a></p>
-		
-		<p>The closer the largest eigenvalue to the average degree of the egonet, the more balanced the egonet is. Unbalanced egonets will be usually larger groups of mutual friends, as the likelihood of everyone knowing everyone else decreases with the size of the community.</p> 
+		<p>This is an analysis on the topology of each of your friend's egonet, based on the <a href='eigenvalue.html'>largest eigenvalue of it.</a> The closer the largest eigenvalue to the average degree of the egonet, the more balanced the egonet is. A balanced egonet means cohesive groups of mutual friends. Larger groups of mutual friends will be usually unbalanced, as the likelihood of everyone knowing everyone else decreases with the size of the community.</p> 
 		
 		<div class="row">
 			<div class="span7">

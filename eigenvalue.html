@@ -81,7 +81,7 @@ function render(sys, graphType) {
 	var rankInfo = largestEigenValue(graph, nodeByIndex);
 	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 	
-	mainStats(graph, features, rankInfo, centrality);
+	mainStats(graph, features, rankInfo, centrality, false, false, false);
 	
 	for(var node in graph) {
 	    sys.addNode(node, {label:node});
@@ -100,12 +100,14 @@ function renderGraph(sys) {
 <div class="container">
  	<h1>Largest eigenvalue</h1>
  	
- 	<p>The largest eigenvalue of the adjacency matrix lies between the average degree of the graph and the maximum degree. The more it approaches the average degree, the more balanced the graph is. The more it approaches the maximum degree, the more connection imbalance there is.</p>
+ 	<p>The largest eigenvalue of the adjacency matrix lies between the average degree of the graph and the maximum degree. The more it approaches the average degree, <strong>the more balanced the graph is</strong>. The more it approaches the maximum degree, the more connection imbalance there is.</p>
  	
- 	<p>Both graph A and graph B have the same number of nodes, edges, average degree, and no clear <a href='betweenness.html'>central</a> nodes. However note how their maximum eigenvalue differs.</p>
+ 	<p>Both <strong>graph A</strong> and <strong>graph B</strong> have the same number of nodes, edges, average degree, and no clear <a href='betweenness.html'>central</a> nodes. <i>However note how their maximum eigenvalue differs.</i></p>
  	
+ 	<div class="alert alert-info">
  	<p>In the case of unweighted graphs, this value is not so meaningful. But in the case of weighted relationships, it can raise relevant outliers. For instance, imagine a relationship of bank accounts where money is transferred from one account to another. 
- 	The largest eigenvalue could signal communities where a large amount of money is transferred only to a few accounts. Using other metrics would signal false positives, as they would not capture the true notion of "imbalance" within the community.</p>
+ 	The largest eigenvalue could signal communities where a large amount of money is transferred only to few accounts.</p>
+ 	</div>
  	 
  	<a href="javascript:renderGraph(sys, 'A');">Graph A</a> - <a href="javascript:render(sys, 'B');">Graph B</a> 
  	<div class="row">
@@ -113,12 +115,6 @@ function renderGraph(sys) {
   		<div class="span4">
   			<div id="stats">
   				<div id="main-stats">
-  				</div>
-  				<a href="#">Central nodes:</a>
-  				<div id="central-nodes">
-  				</div>
-  				<a href="#">Influencers:</a>
-  				<div id="influencers">
   				</div>
   			</div>
   		</div>
