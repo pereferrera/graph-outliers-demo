@@ -22,213 +22,239 @@
 <script src="lib/jquery.js"></script>
 <script src="lib/bootstrap.min.js"></script>
 <script src="lib/arbor.js"></script>
-<script src="lib/raphael-min.js"></script>
-<script src="lib/g.raphael-min.js"></script>
-<script src="lib/g.line-min.js"></script>
+<script src="lib/jsapi.js"></script>
 <script src="graphs.js"></script>
 <script src="stats.js"></script>
 <script src="renderer.js"></script>
 
 <script>
+google.load('visualization', '1.0', {'packages':['corechart']});
+google.setOnLoadCallback(drawCharts);
+
 function doMouseDown(e) {
 	var pos = $("#viewport").offset();
 	console.log(sys.nearest(arbor.Point(e.pageX-pos.left, e.pageY-pos.top)).node.name);
 }
 
 function renderGraph(sys) {
-	$.getJSON('/data.json', function(data) {
-		// create the graph as a JavaScript object
-	    var graph = {};
 	
-	    $.each(data, function(key, val) {
-	    	    // add some nodes to the graph and watch it go...
-				if(!graph[val.uid1]) {
-					graph[val.uid1] = {};
-				}
-				graph[val.uid1][val.uid2] = val.uid2;
-				if(!graph[val.uid2]) {
-					graph[val.uid2] = {};
-				}
-				graph[val.uid2][val.uid1] = val.uid1;
-		});    	
+}
+
+function drawCharts() {
+	// create the graph as a JavaScript object
+    var graph = {};
+
+    biConnection(graph, "a", "b");
+    biConnection(graph, "b", "c");
+    biConnection(graph, "c", "d");
+    biConnection(graph, "c", "cc");
+    biConnection(graph, "d", "e");
+    biConnection(graph, "d", "f");
+    biConnection(graph, "d", "g");
+    biConnection(graph, "g", "f");
+    biConnection(graph, "g", "j");
+    biConnection(graph, "e", "i");
+    biConnection(graph, "f", "i");
+    biConnection(graph, "f", "k");
+    biConnection(graph, "k", "l");
+    biConnection(graph, "k", "m");
+    biConnection(graph, "s", "n");
+    biConnection(graph, "s", "o");
+    biConnection(graph, "s", "p");
+    biConnection(graph, "s", "r");
+    biConnection(graph, "p", "q");
+    biConnection(graph, "p", "z");
+    biConnection(graph, "p", "x");
+    biConnection(graph, "p", "zz");
+    biConnection(graph, "p", "zzz");
+    biConnection(graph, "p", "d");
+    biConnection(graph, "i", "t");
+    biConnection(graph, "t", "u");
+    biConnection(graph, "t", "v");
+    biConnection(graph, "t", "w");
+    biConnection(graph, "v", "u");
+    biConnection(graph, "w", "v");
+    biConnection(graph, "v", "w");
+    biConnection(graph, "u", "w");
 	
-		// calculate number of nodes
-		var nodes = 0;
-		// create a convenient lookup by node index
-		var nodeByIndex = {};
-		for(var node in graph) {
-			nodeByIndex[nodes] = node;
-			nodes++;
-		}
+	for(var node in graph) {
+	    sys.addNode(node, {label:node});
+	    for(var neighbor in graph[node]) {
+	    	sys.addEdge(node, neighbor);
+	    }
+	}
 	
-		var features = computeFeatures(graph);
-		var rankInfo = largestEigenValue(graph, nodeByIndex);
-		var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
-		
-	    mainStats(graph, features, rankInfo, centrality, true, true, true);
+	// calculate number of nodes
+	var nodes = 0;
+	// create a convenient lookup by node index
+	var nodeByIndex = {};
+	for(var node in graph) {
+		nodeByIndex[nodes] = node;
+		nodes++;
+	}
+
+	var features = computeFeatures(graph);
+	var rankInfo = largestEigenValue(graph, nodeByIndex);
+	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 	
-		// Outliers
-		
-		features.nodeFeatures.sort(function(a, b) {
-			return a.degree - b.degree;
-		});
-	
-		// --- gRaphael chart --- http://www.cs.stonybrook.edu/~leman/icdm12/ICDM12-Tutorial%20-%20PartI.pdf
-		
-		var r = Raphael("chart"), txtattr = {
-			font : "12px sans-serif"
-		};
-	
-		var x = [], y = [], y2 = [];
-		var lookup = [];
-		for(var i = 0; i < features.nodeFeatures.length; i++) {
-			x[i] = features.nodeFeatures[i].degree;
-			y[i] = features.nodeFeatures[i].egonetLinks;
-			if(!lookup[features.nodeFeatures[i].egonetLinks]) {
-				lookup[features.nodeFeatures[i].egonetLinks] = [];
-			}
-			lookup[features.nodeFeatures[i].egonetLinks].push( features.nodeFeatures[i] );
-		}
-		var regression = leastSquares(x, y);
-		
-		for(var i = 0; i < x.length; i++) {
-			y2[i] = regression.a * x[i] + regression.b;
-		}
-		
-		r.linechart(10, 10, 600, 220, x, [ y, y2 ], { nostroke: false, axis: "0 0 1 1", symbol: "circle", smooth: true }).hoverColumn(function () {
-			var html = "";
-			var total = 0;
-			for(var k = 0; k < this.values.length / 2; k++) {
-				for( var m = 0; m < lookup[this.values[k]].length; m++ ) {
-					html += "<li> " + lookup[this.values[k]][m].node + " (" + this.values[k] + " ego-links, " + lookup[this.values[k]][m].degree + " common f.)</li>";
-					total++;
-					if(total == 10) {
-						break;
-					}
-				}
-				if(total == 10) {
-					break;
-				}
-			}
-			$("#explanation").html("<ul>" + html + "</ul>");
-		}, function () {
-			$("#explanation").html("");
-	    });
-	
-		// ---- eigenvalue graph. Note: for some reason variable reusing in JavaScript made weird things to me. --- //
-	
-		
-		features.nodeFeatures.sort(function(a, b) {
-			return a.egonetLinks - b.egonetLinks;
-		});
-		
-		var rb = Raphael("chart_2");
-	
-		var xb = [], yb = [], y2b = [];
-		var lookupb = [];
-		
-		for(var i = 0; i < features.nodeFeatures.length; i++) {
-			xb[i] = features.nodeFeatures[i].averageEgonetDegree;
-			yb[i] = features.nodeFeatures[i].largestEigenvalue;
-			if(!lookupb[features.nodeFeatures[i].largestEigenvalue]) {
-				lookupb[features.nodeFeatures[i].largestEigenvalue] = [];
-			}
-			lookupb[features.nodeFeatures[i].largestEigenvalue].push( features.nodeFeatures[i] );
-		}
-		
-		for(var i = 0; i < x.length; i++) {
-			y2b[i] = xb[i];
-		}
-		
-		rb.linechart(10, 10, 600, 220, xb, [ yb, y2b ], { nostroke: false, axis: "0 0 1 1", symbol: "circle", smooth: true }).hoverColumn(function () {
-			var html = "";
-			var total = 0;
-			for(var k = 0; k < this.values.length / 2; k++) {
-				for( var m = 0; m < lookupb[this.values[k]].length; m++ ) {
-					html += "<li> " + lookupb[this.values[k]][m].node + " (" + this.values[k] + " largest eigenvalue)</li>";
-					total++;
-					if(total == 10) {
-						break;
-					}
-				}
-				if(total == 10) {
-					break;
-				}
-			}
-			$("#explanation_2").html("<ul>" + html + "</ul>");
-		}, function () {
-			$("#explanation_2").html("");
-	    });
-		
-		for(var node in graph) {
-		    sys.addNode(node, {label:node});
-		    for(var neighbor in graph[node]) {
-		    	sys.addEdge(node, neighbor);
-		    }
-		}
-	})
-	.error(function() { alert("Error loading JSON data."); })
+    mainStats(graph, features, rankInfo, centrality, true, true, true);
+
+    features.nodeFeatures.sort(function(a, b) {
+    	return a.degree - b.degree;	
+    });
+    
+    var data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Degree');
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].degree ]);
+    }
+	data.addRows(array);
+
+    var chart = new google.visualization.LineChart(document.getElementById('chart'));
+    chart.draw(data, { width: 600, heigth: 300 });
+    
+    data = new google.visualization.DataTable();
+
+    var x = [], y = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	x[i] = features.nodeFeatures[i].degree;
+    	y[i] = features.nodeFeatures[i].egonetLinks;
+    }
+
+	regression = leastSquares(x, y);
+
+    data.addColumn('number', 'Degree');
+    data.addColumn('number', 'Egonet size');
+    data.addColumn('number', 'Expected egonet size');
+
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].degree, features.nodeFeatures[i].egonetLinks + 1, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    }
+	data.addRows(array);
+    
+    chart = new google.visualization.ScatterChart(document.getElementById('chart_2'));
+    chart.draw(data, { width: 600, heigth: 300 });
+
+    data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Egonet size');
+    data.addColumn('number', 'Expected egonet size');
+
+    array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].egonetLinks + 1, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    }
+	data.addRows(array);
+    
+	chart = new google.visualization.LineChart(document.getElementById('chart_3'));
+    chart.draw(data, { width: 600, heigth: 300 });
+
+}
+
+function step(st) {
+	if(st == 1) {
+		$("#t1").html("Degree distribution");
+		$("#s1").toggle();
+		$("#s2").toggle();
+	}
+	if(st == 2) {
+		$("#s3").toggle();
+	}
+	if(st == 3) {
+		$("#central-nodes").toggle();
+		$("#w1").toggle();
+		$("#w2").toggle();
+	}
+	if(st == 4) {
+		$("#central-edges").toggle();
+		$("#w2").toggle();
+		$("#w3").toggle();
+	}
+	if(st == 5) {
+		$("#influencers").toggle();
+		$("#w3").toggle();
+		$("#w4").toggle();
+	}
 }
 </script>
 </head>
 <body>
 <div class="container">
- 	<h1>Your mutual friends social graph</h1>
+ 	<h1>Social network: What is strange?</h1>
  	
 	<div class="row">
   		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
 
   		<div class="span4">
   			<div id="stats">
+  				<h3>Overall stats:</h3>
   				<div id="main-stats">
   				</div>
-  				<a href="betweenness.html">Central nodes:</a>
-  				<div id="central-nodes">
+  				<p>A lot of numbers that may mean really nothing on a big scale ...</p>
+  				<div id="w1">
+  					<p><a href="#central-nodes" onClick="javascript:step(3);">Want to see more freaky stats?</a></p>
   				</div>
-  				<a href="betweenness.html">Central edges:</a>
-  				<div id="central-edges">
+  				<div id="central-nodes" style="display:none">
+  				</div>  				
+  				<div id="w2" style="display:none">
+  					<p><a href="#central-edges" onClick="javascript:step(4);">And more?</a></p>
   				</div>
-  				<a href="influence.html">Influencers:</a>
-  				<div id="influencers">
+  				<div id="central-edges" style="display:none">
+  				</div>
+  				<div id="w3" style="display:none">
+  					<p><a href="#influencers" onClick="javascript:step(5);">And even more?</a></p>
+  				</div>
+  				<div id="influencers" style="display:none">
+  				</div>
+  				<div id="w4" style="display:none">
+  					<p><i>But we were looking for outliers, weren't we?</i></a></p>
   				</div>
   			</div>
   		</div>
 	</div>
 	
-	<div class="raphael">
-		<h2>Highly / loosely connected egonets</h2>
+	<div>
+		<h2 id="t1"><a href="#s1" onClick="javascript:step(1);">What about the degree distribution?</a></h2>
 	
-		<p><b>X = #common friends, y = #links in egonet. Blue is actual data, green is regression line.</b></p>
-		
-		<p>This is an analysis on the <a href='clustering.html'>clustering</a> of each of your friend's egonet. The egonet of a friend is a graph of the friends you have in common. This graph is a regression on the size of the egonet versus the number of common friends.</p>
-		<ul>
-			<li><b>Higher slope:</b> These are friends whose mutual friends are highly connected. In the case of your social network, this probably means a friend whom you have only a certain group of friends in common. For instance, someone you knew in one past work.</li>
-			<li><b>Lower slope:</b> These are friends whose mutual friends are <b>not</b> highly connected. In the case of your social network, this probably means a friend whom you have several, disjoint groups of friends in common. For instance, your girlfriend/boyfriend, with whom you share several aspects of your life.</li>
-		</ul>
-	
-		<p><i>Hover on the graph for displaying each of your friend's names.</i></p>
-		
-		<div class="row">
+		<div id="s1" class="row" style="display:none">
 			<div class="span7">
 				<div id="chart">
 				</div>
 			</div>
 			<div id="explanation" class="span4">
+				<p>The degree distribution shows nothing interesting. Some nodes will have far more connections than the rest, and there is nothing
+				strange in that. Or can't Lady Gaga have 38M followers on Twitter? A long tail of nodes will have very few connections as well, and that's also pretty normal.</p>
+				
+				<p>At the end of the day, the degree distribution of a social network will be just some kind of zipfian function.</p>   
 			</div>
 		</div>
 
-		<h2>Balanced / unbalanced communities</h2>
-
-		<p><b>X = #average degree in egonet, y = largest eigenvalue of egonet. Blue is actual data, green is y = x line.</b></p>
-
-		<p>This is an analysis on the topology of each of your friend's egonet, based on the <a href='eigenvalue.html'>largest eigenvalue of it.</a> The closer the largest eigenvalue to the average degree of the egonet, the more balanced the egonet is. A balanced egonet means cohesive groups of mutual friends. Larger groups of mutual friends will be usually unbalanced, as the likelihood of everyone knowing everyone else decreases with the size of the community.</p> 
+		<div id="s2" style="display:none">
+			<h2 id="t2"><a href="#s3" onClick="javascript:step(2);">What outliers are there then?</a></h2>
+		</div>
 		
-		<div class="row">
-			<div class="span7">
-				<div id="chart_2">
+		<div id="s3" style="display:none">
+			<p>However, when comparing the degree of a node with the size of its egonet, relevant outliers may arise. It is expected that the size of one node's egonet
+			increases with the number of connections it has. By running a regression on the egonet size based on the degree, we obtain an "expected egonet size" line. Using this
+			line, we see now two types of interesting outliers:</p>
+			
+			<ul>
+				<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artifically connected (e.g. spam, fake accounts that are interlinked for gaining influence in a network).</li>
+				<li>Nodes who have <strong>far less connections</strong> in its egonet than expected: These may be nodes who randomly and massively connect to other nodes, whose activity in a social network is not pure or legitimate. However, some profiles such as professional recruiters may fall into this category as well.</li> 
+			</ul>
+			
+			<div class="row">
+				<div class="span6">
+					<div id="chart_2">
+					</div>
 				</div>
-			</div>
-			<div id="explanation_2" class="span4">
+				<div class="span6">
+					<div id="chart_3">
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

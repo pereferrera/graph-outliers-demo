@@ -1,3 +1,14 @@
+function biConnection(graph, a, b) {
+	if(!graph[a]) {
+		graph[a] = {};
+	}
+	if(!graph[b]) {
+		graph[b] = {};
+	}
+	graph[a][b] = b;
+	graph[b][a] = a;
+}
+
 /**
  * Counts the number of disconnected clusters in a graph.
  * Via simple message passing algorithm.
@@ -246,7 +257,6 @@ function roundToTwo(value) {
 function betweennessCentrality(graph, nodeByIndex, nodes) {
 	// we will also calculate per-edge betweenness centralities
 	// later we can use them for community detection
-	var totalPathsThroughEdge = allZeroMatrix(nodes);
 	var totalShortestPathsThroughEdge = allZeroMatrix(nodes);
 
 	var adjacencyMatrix = adjacencyMatrixOf(graph, nodeByIndex, nodes);
@@ -262,7 +272,6 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 				pathsMatrix[i][j].length = 1;
 				pathsMatrix[i][j].count = 1;
 				// account 1-paths through edges
-				totalPathsThroughEdge[i][j] = 1;
 				totalShortestPathsThroughEdge[i][j] = 1;
 				pathsMatrix[i][j].paths.push([i, j]); 
 			}
@@ -278,7 +287,7 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	var fullyCovered;
 	do { 
 	    fullyCovered = true;
-	    var result = [], edgeContributions = allZeroMatrix(nodes), m1 = adjacencyMatrix, m2 = convertedAdjacencyMatrix;
+	    var result = [], m1 = adjacencyMatrix, m2 = convertedAdjacencyMatrix;
 	    
 	    for(var i = 0; i < nodes; i++) {
 	    	result[i] = [];
@@ -287,15 +296,7 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	    		for(var k = 0; k < nodes; k++) {
 	    			var val = m1[i][k]  * m2[k][j];
 	    			if(val > 0) {
-	    				// sum total paths that go through these edges
-	    				// we don't know yet if these paths are shortest paths
-	    				// but we need the totals for every edge anyway
-                		edgeContributions[i][k] += m1[i][k] * m2[k][j];
                 		for(var m = 0; m < pathsMatrix[k][j].paths.length; m++) {
-    						// for each pair of edges involved in the path
-    						for(var n = 0; n < pathsMatrix[k][j].paths[m].length - 1; n++) {
-    							edgeContributions[pathsMatrix[k][j].paths[m][n]][pathsMatrix[k][j].paths[m][n + 1]]++;
-    						}
                 			var dCopy = pathsMatrix[k][j].paths[m].slice();
                 			// save the full path for calculating "shortest-path" edge contributions
                 			// if these are not real "shortest-paths" the structure will be discarded
@@ -306,6 +307,7 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	    			sum += val;
 	    		}
 	    		result[i][j] = sum;
+	    		
 	    		// if i and j were not yet connected and we have a path now ...
 	    		if(!pathsMatrix[i][j] && sum > 0) {
 	    			// ... here we found a new set of shortest paths 
@@ -327,15 +329,6 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	    }
 	    convertedAdjacencyMatrix = result;
 		diameter++;
-	    
-		if(!fullyCovered) {
-			for(var i = 0; i < nodes; i++) {
-		    	for(var j = 0; j < nodes; j++) {
-	    			totalPathsThroughEdge[i][j] += edgeContributions[i][j];
-		    	}
-			}
-		}
-		
 	} while(!fullyCovered && diameter < nodes);
 
 	var centralities = [];
@@ -382,13 +375,14 @@ function betweennessCentrality(graph, nodeByIndex, nodes) {
 	// emit edge betweenness
 	for(var i = 0; i < nodes; i++) {
 		for(var j = 0; j < nodes; j++) {
-			if(totalPathsThroughEdge[i][j] && totalShortestPathsThroughEdge[i][j]) {
+			if(totalShortestPathsThroughEdge[i][j]) {
 				var obj = {};
+				obj.fromIndex = i;
+				obj.toIndex = j;
 				obj.from = nodeByIndex[i];
-				obj.to = nodeByIndex[j];
-				obj.totalPaths = totalPathsThroughEdge[i][j];
+				obj.to = nodeByIndex[j];	
 				obj.totalShortestPaths = totalShortestPathsThroughEdge[i][j];
-				obj.centrality = roundToTwo(totalShortestPathsThroughEdge[i][j] / totalPathsThroughEdge[i][j]); 
+				obj.centrality = totalShortestPathsThroughEdge[i][j]; 
 				result.edgeCentralities.push(obj);
 			}
 		}
@@ -412,11 +406,21 @@ function allZeroMatrix(nodes) {
 /**
  * http://en.wikipedia.org/wiki/Girvan%E2%80%93Newman_algorithm
  * 
+ * For big graphs, this is a CPU killer. Don't do it.
+ * 
  * @param graph
  * @param betweenness
  */
-function communityDetection(graph, betweenness) {
-	
+function communityDetection(graph, nodeByIndex, nodes, betweenness) {
+	for(var i = 0; i < 100; i++) {
+		betweenness.edgeCentralities.sort(function(a, b) {
+			return b.centrality - a.centrality;
+		});
+		delete graph[betweenness.edgeCentralities[0].from][betweenness.edgeCentralities[0].to];
+		delete graph[betweenness.edgeCentralities[0].to][betweenness.edgeCentralities[0].from];
+		console.log(findClusters(graph) + " clusters.");
+		betweenness = betweennessCentrality(graph, nodeByIndex, nodes);
+	}
 }
 
 /**

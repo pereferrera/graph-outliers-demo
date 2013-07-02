@@ -13,7 +13,9 @@ function mainStats(graph, features, rankInfo, centrality, showCentralNodes, show
 	html += "<tr><td>Max degree: </td><td>" + features.maxDegree + "</td></tr>";
 	html += "<tr><td><a href='eigenvalue.html'>Largest eigenvalue</a>: </td><td>" + rankInfo.eigenvalue + "</td></tr>";
 	html += "<tr><td># of disconnected communities: </td><td>" + findClusters(graph) + "</td></tr>";
-	html += "<tr><td>Diameter (longest shortest path): <td>" + centrality.diameter + "</td></tr>";
+	if(showCentralNodes) {
+		html += "<tr><td>Diameter (longest shortest path): <td>" + centrality.diameter + "</td></tr>";
+	}
 	html += "<tr><td><a href='clustering.html'>Clustering coefficient</a>: <td>" + features.clusteringCoefficient + "</td></tr>";
 	html += "</tbody>";
 	
@@ -21,7 +23,7 @@ function mainStats(graph, features, rankInfo, centrality, showCentralNodes, show
 	
 	// Influencers
 	if(showInfluencers) {
-		html = "<ul>";
+		html = "<a href='influence.html'>Influencers:</a><ul>";
 		for(var i = 0; i < 5 && i < rankInfo.ranks.length; i++) {
 			html += "<li>" + rankInfo.ranks[i].node + " (" + rankInfo.ranks[i].rank + " e.centrality).</li>";
 		}
@@ -36,7 +38,7 @@ function mainStats(graph, features, rankInfo, centrality, showCentralNodes, show
 			return b.centrality - a.centrality;
 		});
 		
-		html = "<ul>";
+		html = "<a href='betweenness.html'>Central nodes:</a><ul>";
 		for(var i = 0; i < 5 && i < centrality.centralities.length; i++) {
 			html += "<li>" + centrality.centralities[i].node + " (" + centrality.centralities[i].centrality + " betweenness)</li>";
 		}
@@ -51,7 +53,7 @@ function mainStats(graph, features, rankInfo, centrality, showCentralNodes, show
 			return b.centrality - a.centrality;
 		});
 		
-		html = "<ul>";
+		html = "<a href='betweenness.html'>Central edges:</a><ul>";
 		for(var i = 0; i < 5 && i < centrality.edgeCentralities.length; i++) {
 			html += "<li>" + centrality.edgeCentralities[i].from + " -> " + centrality.edgeCentralities[i].to + " (" + centrality.edgeCentralities[i].centrality + " betweenness)</li>";
 		}

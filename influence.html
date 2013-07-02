@@ -32,11 +32,6 @@
 <script>
 var graph = {};
 
-function biConnection(graph, a, b) {
-	graph[a][b] = b;
-	graph[b][a] = a;
-}
-
 function render(sys, graphType) {
 	var nodes = [ "a", "b", "c", "d", "e", "f" ];
 

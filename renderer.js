@@ -136,8 +136,8 @@ function doMouseDown(e) {
   }
   
   $(document).ready(function() {  
-	  	sys = arbor.ParticleSystem(100, 100, 0) // create the system with sensible repulsion/stiffness/friction
-	  	sys.parameters({gravity:false}) // use center-gravity to make the graph settle nicely (ymmv)
+	  	sys = arbor.ParticleSystem(200, 100, 10) // create the system with sensible repulsion/stiffness/friction
+	  	sys.parameters({gravity:true}) // use center-gravity to make the graph settle nicely (ymmv)
 	  	sys.renderer = Renderer("#viewport") // our newly created renderer will have its .init() method called shortly by sys...
 
 	  	// This function must be implemented in every .html !!! Yes, I know, my javascript skills SUCK! 
