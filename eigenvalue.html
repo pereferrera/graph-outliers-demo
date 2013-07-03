@@ -54,7 +54,7 @@ function render(sys, graphType) {
 			}
 			for(var j = 0; j < count; j++) {
 				var neighbor = nodes[(i + 1 + j) % nodes.length];
-				graph[nodes[i]][neighbor] = neighbor; 
+				graph[nodes[i]][neighbor] = 1; 
 			}	
 		}
 		
@@ -62,11 +62,11 @@ function render(sys, graphType) {
 		for(var i = 0; i < 4; i++) {
 			for(var j = 0; j < nodes.length; j++) {
 				var neighbor = nodes[(i + 1 + j) % (nodes.length / 2)];
-				graph[nodes[i]][neighbor] = neighbor; 
+				graph[nodes[i]][neighbor] = 1; 
 			}
 		}
-		graph[nodes[4]][nodes[5]] = nodes[5];
-		graph[nodes[4]][nodes[6]] = nodes[6];
+		graph[nodes[4]][nodes[5]] = 1;
+		graph[nodes[4]][nodes[6]] = 1;
 	}
 	
 	// create a convenient lookup by node index

@@ -1,0 +1,300 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<!-- Le styles -->
+<link href="css/bootstrap.css" rel="stylesheet">
+<style>
+  body {
+  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+  }
+</style>
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+<title>Graph outlier detection tutorial</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="Pere Ferrera Bertran (Datasalt Systems S.L.)">
+
+<script src="lib/jquery.js"></script>
+<script src="lib/bootstrap.min.js"></script>
+<script src="lib/arbor.js"></script>
+<script src="lib/jsapi.js"></script>
+<script src="graphs.js"></script>
+<script src="stats.js"></script>
+<script src="renderer.js"></script>
+
+<script>
+google.load('visualization', '1.0', {'packages':['corechart']});
+google.setOnLoadCallback(drawCharts);
+
+function doMouseDown(e) {
+	var pos = $("#viewport").offset();
+	console.log(sys.nearest(arbor.Point(e.pageX-pos.left, e.pageY-pos.top)).node.name);
+}
+
+function renderGraph(sys) {
+	
+}
+
+function weightedConnection(graph, from, to, weight) {
+	if(!graph[from]) {
+		graph[from] = {};
+	}
+	graph[from][to] = weight;
+	if(!graph[to]) {
+		graph[to] = {};
+	}
+	graph[to][from] = weight;
+}
+
+function drawCharts() {
+	// create the graph as a JavaScript object
+    var graph = {};
+	
+    weightedConnection(graph, "a", "b", 1);
+    weightedConnection(graph, "a", "c", 0.5);
+    weightedConnection(graph, "a", "d", 0.1);
+    
+    weightedConnection(graph, "b", "a", 0.5);
+    weightedConnection(graph, "b", "d", 5);
+    
+    weightedConnection(graph, "c", "a", 0.5);
+    weightedConnection(graph, "c", "d", 2);
+	
+    weightedConnection(graph, "f", "g", 2);
+    weightedConnection(graph, "f", "h", 2);
+    weightedConnection(graph, "h", "f", 1);
+    weightedConnection(graph, "f", "j", 20);
+    
+    weightedConnection(graph, "j", "b", 10);
+    weightedConnection(graph, "j", "z", 5);
+    
+    weightedConnection(graph, "i", "k", 7);
+    weightedConnection(graph, "i", "l", 5);
+    weightedConnection(graph, "i", "m", 7);    
+    weightedConnection(graph, "q", "k", 7);
+    weightedConnection(graph, "q", "l", 7);
+    weightedConnection(graph, "q", "m", 6);
+    weightedConnection(graph, "q", "f", 1);
+    weightedConnection(graph, "i", "e", 1);
+    weightedConnection(graph, "i", "c", 1);
+    weightedConnection(graph, "i", "r", 9);
+    
+    weightedConnection(graph, "a", "s", 1);
+    weightedConnection(graph, "a", "t", 2);
+    
+    weightedConnection(graph, "b", "u", 1);
+    
+    weightedConnection(graph, "z", "x", 3);
+    
+	for(var node in graph) {
+	    sys.addNode(node, {label:node});
+	    for(var neighbor in graph[node]) {
+	    	sys.addEdge(node, neighbor, { weigth: graph[node][neighbor] });
+	    }
+	}
+	
+	// calculate number of nodes
+	var nodes = 0;
+	// create a convenient lookup by node index
+	var nodeByIndex = {};
+	for(var node in graph) {
+		nodeByIndex[nodes] = node;
+		nodes++;
+	}
+
+	var features = computeFeatures(graph);
+	var rankInfo = largestEigenValue(graph, nodeByIndex);
+	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
+	
+    mainStats(graph, features, rankInfo, centrality, true, true, true);
+
+    features.nodeFeatures.sort(function(a, b) {
+    	return a.degree - b.degree;	
+    });
+    
+    var data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Degree');
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].degree ]);
+    }
+	data.addRows(array);
+
+    var chart = new google.visualization.LineChart(document.getElementById('chart'));
+    chart.draw(data, { width: 600, heigth: 300 });
+    
+    data = new google.visualization.DataTable();
+
+    var x = [], y = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	x[i] = features.nodeFeatures[i].degree;
+    	y[i] = features.nodeFeatures[i].largestEigenvalue;
+    }
+
+	regression = leastSquares(x, y);
+
+    data.addColumn('number', 'Degree');
+    data.addColumn('number', 'Principal eigenvalue');
+    data.addColumn('number', 'Expected principal eigenvalue');
+
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].degree, features.nodeFeatures[i].largestEigenvalue, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    }
+	data.addRows(array);
+    
+    chart = new google.visualization.LineChart(document.getElementById('chart_2'));
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" }, hAxis : { title: 'Degree' }, vAxis : { title: 'Egonet size' } });
+
+    data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Principal eigenvalue');
+    data.addColumn('number', 'Expected principal eigenvalue');
+
+    array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].largestEigenvalue, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    }
+	data.addRows(array);
+    
+	chart = new google.visualization.LineChart(document.getElementById('chart_3'));
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" } });
+}
+
+function step(st) {
+	if(st == 1) {
+		$("#t1").html("(Weighted) Degree distribution = Total money flowing around a node");
+		$("#s1").toggle();
+		$("#s2").toggle();
+	}
+	if(st == 2) {
+		$("#t2").html("Principal eigenvalue regression (ELWPL)");
+		$("#s3").toggle();
+		$("#s4").toggle();
+	}
+	if(st == 3) {
+		$("#central-nodes").toggle();
+		$("#w1").toggle();
+		$("#w2").toggle();
+	}
+	if(st == 4) {
+		$("#central-edges").toggle();
+		$("#w2").toggle();
+		$("#w3").toggle();
+	}
+	if(st == 5) {
+		$("#t3").html("Clustering to the rescue")
+		$("#s5").toggle();
+	}
+	if(st == 6) {
+		sys.pruneEdge(sys.getEdges("f", "q")[0]);
+		sys.pruneEdge(sys.getEdges("q", "f")[0]);
+		sys.pruneEdge(sys.getEdges("i", "c")[0]);
+		sys.pruneEdge(sys.getEdges("c", "i")[0]);
+		$("#t1").html("Look at the suspicious community that just arised... ");
+		$("#chart").html("<p>The community around (k, l, m, g, i) is suspicious. It is highly clustered and its pattern may show several kinds of fraud: washing money, tax evasion through intermediate accounting, ... ");
+		$("#explanation").html("<p><i>These groups of accounts may be hidden inside the complex graph of transactions, they might not be regarded as suspicious by traditional metrics. However, by deeply analyzing the relations between them, they may be unraveled.</i></p>");
+		$("#s2").toggle();
+		$("#s3").toggle();
+		$("#s4").toggle();
+		$("#s5").toggle();
+	}
+}
+</script>
+</head>
+<body>
+<div class="container">
+ 	<h1>Financial transactions: What is strange?</h1>
+ 	
+<!-- http://linkanalysisnow.com/2009/04/visualizing-financial-information.html -->
+<!-- http://core.kmi.open.ac.uk/display/5827759 -->
+
+ 	<i>Edge weights represent the total amount of money flowing between two accounts (graph is undirected for simplicity).</i>
+ 	
+	<div class="row" id="main">
+  		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
+
+  		<div class="span4">
+  			<div id="stats">
+  				<h3>Overall stats:</h3>
+  				<p><i>Here degree is weighted degree.</i></p>
+  				<div id="main-stats">
+  				</div>
+  				<p>A lot of numbers that may mean really nothing on a big scale ... But the following lists may help us later on:</p>
+
+  				<div id="central-nodes">
+  				</div>  				
+  				<div id="central-edges">
+  				</div>
+  			</div>
+  		</div>
+	</div>
+	
+	<div>
+		<h2 id="t1"><a href="#s1" onClick="javascript:step(1);">What about the amount of money flowing?</a></h2>
+	
+		<div id="s1" class="row" style="display:none">
+			<div class="span7">
+				<div id="chart">
+				</div>
+			</div>
+			<div id="explanation" class="span4">
+				<p>In our imaginary micro financial transaction world, node "j" is flowing much more money around than the other nodes.
+				But does that mean that "j" is doing something malicious? It might be a legitimate activity, one which is very profitable.</p>
+				<p>Other trivial features such as the number of agents sending money to a node are not relevant as well. For instance, a subscription-based
+				company with a huge client base may receive money from many nodes, and still be legitimate.</p> 
+			</div>
+		</div>
+
+		<div id="s2" style="display:none">
+			<h2 id="t2"><a href="#s3" onClick="javascript:step(2);">What outliers are there then?</a></h2>
+		</div>
+		
+		<div id="s3" style="display:none">
+			<p>We can use a similar idea to the one in the social network example for finding strange egonets related to one account.
+			Particularly, we can run a regression on the <a href="eigenvalue.html">principal eigenvalue</a>, which is <a href="#">also proven to follow a power law</a>.
+			What this will tell us is which egonets in our dataset deviate too much from the regression line, either having anomalous imbalance in the flow or too much, "artificial" balance.</p>
+			
+			<p>As we see, outliers after the regression don't show up as easily. There is one node which presents some relative imbalance in its egonet (f), but this might be well explained.
+			For instance, a company which produces many recurring payments to a single account. On the other side there is one node which presents anomalous "balance" in its egonet (i), given the
+			amount of money flowing around it. Can this be meaningful?</p>
+			<div class="row">
+				<div class="span6">
+					<div id="chart_2">
+					</div>
+				</div>
+				<div class="span6">
+					<div id="chart_3">
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div id="s4" style="display:none">
+			<h2 id="t3"><a href="#s3" onClick="javascript:step(5);">Can we dig deeper?</a></h2>
+		</div>
+		
+		<div id="s5" style="display:none">
+			<p>In the social network example we used a regression somehow related to the <a href="clustering.html">clustering</a> index of the egonet. In this case,
+			the same idea could apply for detecting strangely inter-related accounts (accounts which intensively transfer money between them), but it might well lead to false positives: think of some examples of legitimate triangles (<i>a company
+			pays recurrently to one account which in turn pays recurrently to a real estate company which in turn pays the first company</i>).</p>
+			
+			<p>However, it is a well-known fact that <a href="#">there are clustering patterns</a> in financial fraud, so <strong>can we do better
+			in finding anomalous clusters of inter-related accounts?</strong>.</p>
+			
+			<p>A way of looking at this problem would be <a href="#">community detection</a>. We could split the graph into disjoint communities and analyze
+			each of them. One simple method for community detection consists in iteratively removing edges with high <a href="betweenness.html">betweennes</a> (<i>reference to the method name here</i>).</p>
+			
+			<center><h2><a href="#main" onClick="javascript:step(6);">Click to remove the two edges with higher betweennes!</a></h2></center>
+		</div>
+	</div>
+
+</div>
+</body>
+</html>

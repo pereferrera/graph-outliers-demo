@@ -55,7 +55,11 @@ function doMouseDown(e) {
 
           // draw a line from pt1 to pt2
           ctx.strokeStyle = "rgba(0,0,0, .333)"
-          ctx.lineWidth = 1
+          var width = 1;
+          if(edge.data && edge.data.weigth) {
+        	  width = edge.data.weigth;
+          }
+          ctx.lineWidth = width
           ctx.beginPath()
           ctx.moveTo(pt1.x, pt1.y)
           ctx.lineTo(pt2.x, pt2.y)

@@ -11,7 +11,7 @@ function mainStats(graph, features, rankInfo, centrality, showCentralNodes, show
 	html += "<tr><td># of edges: </td><td>" + features.edges + "</td></tr>";
 	html += "<tr><td>Average degree: </td><td>" + features.averageDegree + "</td></tr>";
 	html += "<tr><td>Max degree: </td><td>" + features.maxDegree + "</td></tr>";
-	html += "<tr><td><a href='eigenvalue.html'>Largest eigenvalue</a>: </td><td>" + rankInfo.eigenvalue + "</td></tr>";
+	html += "<tr><td><a href='eigenvalue.html'>Principal eigenvalue</a>: </td><td>" + rankInfo.eigenvalue + "</td></tr>";
 	html += "<tr><td># of disconnected communities: </td><td>" + findClusters(graph) + "</td></tr>";
 	if(showCentralNodes) {
 		html += "<tr><td>Diameter (longest shortest path): <td>" + centrality.diameter + "</td></tr>";

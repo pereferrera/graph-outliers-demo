@@ -5,8 +5,8 @@ function biConnection(graph, a, b) {
 	if(!graph[b]) {
 		graph[b] = {};
 	}
-	graph[a][b] = b;
-	graph[b][a] = a;
+	graph[a][b] = 1.0;
+	graph[b][a] = 1.0;
 }
 
 /**
@@ -65,15 +65,18 @@ function computeFeatures(graph) {
 	result.nodeFeatures = [];
 	for(var node in graph) {
 		// add the neighbors to an array to be able to iterate them in order easily
+		// (note: this assumes the graph if undirected)
 		var neighbors = [];
-		var degree = 0;
+		var degree = 0, count = 0;
 		for(var neighbor in graph[node]) {
 			edges++;
-			neighbors[degree] = neighbor;
-			degree++;
+			neighbors[count] = neighbor;
+			degree += graph[node][neighbor];
+			count++;
 		}
-		// add one self, otherwise nodes with degree = 1 have egonet links = 0
-//		neighbors[degree] = node;
+		// account one-self for the egonet connections (not for the degree)
+		neighbors[count] = node;
+
 		// count the number of distinct links between neighbors
 		var nlinks = 0;
 		// build a graph with the neighbors for calculating e.g. the >> eigenvalue of the graph
@@ -83,24 +86,29 @@ function computeFeatures(graph) {
 
 		var averageEgonetDegree = 0;
 		
+		console.log("Node: " + node);
+		
 		for(var i = 0; i < neighbors.length; i++) {
 			var egonetDegree = 0;
 			for(var j = 0; j < neighbors.length; j++) {
 				if(i == j) {
 					continue;
 				}
-				if(graph[neighbors[i]][neighbors[j]]) {
+				if(graph[neighbors[i]] && graph[neighbors[i]][neighbors[j]]) {
 					if(!neighborsGraph[neighbors[i]]) {
 						neighborsGraph[neighbors[i]] = {};
 					}
-					neighborsGraph[neighbors[i]][neighbors[j]] = neighbors[j];
+					neighborsGraph[neighbors[i]][neighbors[j]] = graph[neighbors[i]][neighbors[j]];
 					nlinks++;
-					egonetDegree++;
+					egonetDegree += graph[neighbors[i]][neighbors[j]];
 				};
 			};
 			averageEgonetDegree += egonetDegree;
 			maxEgonetDegree = Math.max(maxEgonetDegree, egonetDegree);
 		}
+		
+		console.log("neighbors: " + neighbors);
+		console.log("neighbors graph: " + neighborsGraph);
 		
 		// clustering coefficient (http://en.wikipedia.org/wiki/Clustering_coefficient)
 		c = 0;
@@ -119,6 +127,11 @@ function computeFeatures(graph) {
 		result.nodeFeatures[nodes].largestEigenvalue = largestEigenValue(neighborsGraph, neighbors).eigenvalue;
 		result.nodeFeatures[nodes].maxEgonetDegree = maxEgonetDegree;
 		result.nodeFeatures[nodes].averageEgonetDegree = roundToTwo(averageEgonetDegree / degree);
+		
+		console.log("Degree: " + result.nodeFeatures[nodes].degree);
+		console.log("Average egonet degree: " + result.nodeFeatures[nodes].averageEgonetDegree);
+		console.log("Max egonet degree: " + result.nodeFeatures[nodes].averageEgonetDegree);
+		console.log("Principal eigenvalue: " + result.nodeFeatures[nodes].largestEigenvalue);
 		
 		averageCc += c;
 		nodes++;
@@ -162,6 +175,7 @@ function largestEigenValue(graph, nodeByIndex) {
 	var adjacencyMatrix = adjacencyMatrixOf(graph, nodeByIndex, nodes);
 	var lastNorm;
 	var norm = 0;
+	var iter = 0;
 	do {
 		var tmp = [];
 		lastNorm = norm;
@@ -182,7 +196,8 @@ function largestEigenValue(graph, nodeByIndex) {
 		for(var i = 0; i < nodes; i++) {
 			vect[i] = vect[i] / norm;
 		}
-	} while(Math.abs(norm - lastNorm) > 0.001);
+		iter++;
+	} while(iter < nodes - 1 && Math.abs(norm - lastNorm) > 0.001);
 	// vect is the eigenvector and has the "PageRanks" too.
 	
 	for(var i = 0; i < nodes; i++) {
@@ -216,7 +231,7 @@ function adjacencyMatrixOf(graph, nodeByIndex, nodes) {
 		adjacencyMatrix[i] = new Array(nodes);
 		for(var j = 0; j < nodes; j++) {
 			if(graph[nodeByIndex[i]] && graph[nodeByIndex[i]][nodeByIndex[j]]) {
-				adjacencyMatrix[i][j] = 1;
+				adjacencyMatrix[i][j] = graph[nodeByIndex[i]][nodeByIndex[j]];
 			} else {
 				adjacencyMatrix[i][j] = 0;
 			}

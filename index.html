@@ -14,10 +14,10 @@
 </style>
 <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
-<title>Social graph outlier detection tutorial</title>
+<title>Graph outlier detection tutorial</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="">
-<meta name="author" content="Datasalt Systems S.L.">
+<meta name="author" content="Pere Ferrera Bertran (Datasalt Systems S.L.)">
 
 <script src="lib/jquery.js"></script>
 <script src="lib/bootstrap.min.js"></script>
@@ -131,12 +131,12 @@ function drawCharts() {
 
     var array = [];
     for(var i = 0; i < features.nodeFeatures.length; i++) {
-    	array.push([features.nodeFeatures[i].degree, features.nodeFeatures[i].egonetLinks + 1, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    	array.push([features.nodeFeatures[i].degree, features.nodeFeatures[i].egonetLinks + 1, roundToTwo(regression.a * features.nodeFeatures[i].degree + regression.b) ]);
     }
 	data.addRows(array);
     
-    chart = new google.visualization.ScatterChart(document.getElementById('chart_2'));
-    chart.draw(data, { width: 600, heigth: 300 });
+    chart = new google.visualization.LineChart(document.getElementById('chart_2'));
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" }, hAxis : { title: 'Degree' }, vAxis : { title: 'Egonet size' } });
 
     data = new google.visualization.DataTable();
     data.addColumn('string', 'Node');
@@ -145,12 +145,12 @@ function drawCharts() {
 
     array = [];
     for(var i = 0; i < features.nodeFeatures.length; i++) {
-    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].egonetLinks + 1, regression.a * features.nodeFeatures[i].degree + regression.b ]);
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].egonetLinks + 1, roundToTwo(regression.a * features.nodeFeatures[i].degree + regression.b) ]);
     }
 	data.addRows(array);
     
 	chart = new google.visualization.LineChart(document.getElementById('chart_3'));
-    chart.draw(data, { width: 600, heigth: 300 });
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" } });
 
 }
 
@@ -161,22 +161,13 @@ function step(st) {
 		$("#s2").toggle();
 	}
 	if(st == 2) {
+		$("#t2").html("Egonet size regression (EDPW)");
 		$("#s3").toggle();
 	}
 	if(st == 3) {
-		$("#central-nodes").toggle();
+		$("#influencers").toggle();
 		$("#w1").toggle();
 		$("#w2").toggle();
-	}
-	if(st == 4) {
-		$("#central-edges").toggle();
-		$("#w2").toggle();
-		$("#w3").toggle();
-	}
-	if(st == 5) {
-		$("#influencers").toggle();
-		$("#w3").toggle();
-		$("#w4").toggle();
 	}
 }
 </script>
@@ -195,21 +186,11 @@ function step(st) {
   				</div>
   				<p>A lot of numbers that may mean really nothing on a big scale ...</p>
   				<div id="w1">
-  					<p><a href="#central-nodes" onClick="javascript:step(3);">Want to see more freaky stats?</a></p>
-  				</div>
-  				<div id="central-nodes" style="display:none">
-  				</div>  				
-  				<div id="w2" style="display:none">
-  					<p><a href="#central-edges" onClick="javascript:step(4);">And more?</a></p>
-  				</div>
-  				<div id="central-edges" style="display:none">
-  				</div>
-  				<div id="w3" style="display:none">
-  					<p><a href="#influencers" onClick="javascript:step(5);">And even more?</a></p>
+  					<p><a href="#influencers" onClick="javascript:step(3);">Want to see more stats?</a></p>
   				</div>
   				<div id="influencers" style="display:none">
-  				</div>
-  				<div id="w4" style="display:none">
+  				</div>  				
+  				<div id="w2" style="display:none">
   					<p><i>But we were looking for outliers, weren't we?</i></a></p>
   				</div>
   			</div>
@@ -237,14 +218,20 @@ function step(st) {
 		</div>
 		
 		<div id="s3" style="display:none">
-			<p>However, when comparing the degree of a node with the size of its egonet, relevant outliers may arise. It is expected that the size of one node's egonet
-			increases with the number of connections it has. By running a regression on the egonet size based on the degree, we obtain an "expected egonet size" line. Using this
-			line, we see now two types of interesting outliers:</p>
+			<div class="alert alert-info">
 			
-			<ul>
-				<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artifically connected (e.g. spam, fake accounts that are interlinked for gaining influence in a network).</li>
-				<li>Nodes who have <strong>far less connections</strong> in its egonet than expected: These may be nodes who randomly and massively connect to other nodes, whose activity in a social network is not pure or legitimate. However, some profiles such as professional recruiters may fall into this category as well.</li> 
-			</ul>
+<!-- 			To mention here the Egonet Density Power Law  -->
+
+				<p>However, when comparing the degree of a node with the size of its egonet, relevant outliers may arise. It is intuitive to think that the size of a node's egonet
+				will increase with its degree. In fact, <a href="#">there is a power law</a> between both factors.</p>
+				<p>By running a regression (using min. squares) on the egonet size based on the degree, we obtain an "<i>expected egonet size</i>" line. Using this
+				line, we see now two types of interesting outliers:</p>
+				
+				<ul>
+					<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artifically connected (e.g. spam, fake accounts that are interlinked for gaining influence in a network).</li>
+					<li>Nodes who have <strong>far less connections</strong> in its egonet than expected: These may be nodes who randomly and massively connect to other nodes, whose activity in a social network is not pure or legitimate. However, some profiles such as professional recruiters may fall into this category as well.</li> 
+				</ul>
+			</div>
 			
 			<div class="row">
 				<div class="span6">
@@ -256,6 +243,16 @@ function step(st) {
 					</div>
 				</div>
 			</div>
+			
+			<h3>Did you know?</h3>
+			
+			<p>The idea of performing a regression on the Degree versus the Egonet size is presented in <a href="#">this paper</a> under the name "Egonet Density Power Law", and has been tested with several datasets.</p>
+			<p>The above graphs are directly related to the clustering coefficient of the egonet.</p>
+			<p>In this <a href="#">paper</a>, ... conducted an study and showed that the number of triangles in an egonet (which is another way of measuring how clustered an egonet is) proved a good measure
+			for spam profile detection, and they validate their hypothesis with Twitter data, successfully discriminating between just popular profiles and artifically interlinked spam accounts.</p>
+			<p>For more references, go to the <a href="#">references</a> section.</p>  
+			
+<!-- 			http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf -->
 		</div>
 	</div>
 
