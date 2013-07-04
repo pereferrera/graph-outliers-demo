@@ -7,11 +7,6 @@
 
 <!-- Le styles -->
 <link href="css/bootstrap.css" rel="stylesheet">
-<style>
-  body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-  }
-</style>
 <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
 <title>Social graph outlier detection tutorial</title>
@@ -87,6 +82,26 @@ function renderGraph(sys) {
 </script>
 </head>
 <body>
+<div class="navbar navbar-inverse">
+  <div class="navbar-inner">
+    <a class="brand" href="index.html">What's strange?</a>
+    <ul class="nav">
+      <li><a href="socialnetwork.html">Social network</a></li>
+      <li><a href="financialnetwork.html">Financial transactions</a></li>
+      <li class="dropdown">
+      	<a href="#" class="dropdown-toggle" data-toggle="dropdown">Graph concepts <b class="caret"></b></a>
+      	<ul class="dropdown-menu">
+        	<li><a href="clustering.html">Clustering</a></li>
+        	<li><a href="betweenness.html">Betweenness</a></li>
+        	<li><a href="eigenvalue.html">Principal eigenvalue</a></li>
+        	<li><a href="influence.html">Influence</a></li>
+      	</ul>
+	  </li>
+	  <li><a href="references.html">References</a></li>
+    </ul>
+  </div>
+</div>
+
 <div class="container">
  	<h1>Clustering coefficient</h1>
  	

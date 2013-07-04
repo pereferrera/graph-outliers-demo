@@ -7,11 +7,6 @@
 
 <!-- Le styles -->
 <link href="css/bootstrap.css" rel="stylesheet">
-<style>
-  body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-  }
-</style>
 <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
 <title>Social graph outlier detection tutorial</title>
@@ -97,16 +92,36 @@ function renderGraph(sys) {
 </script>
 </head>
 <body>
+<div class="navbar navbar-inverse">
+  <div class="navbar-inner">
+    <a class="brand" href="index.html">What's strange?</a>
+    <ul class="nav">
+      <li><a href="socialnetwork.html">Social network</a></li>
+      <li><a href="financialnetwork.html">Financial transactions</a></li>
+      <li class="dropdown">
+      	<a href="#" class="dropdown-toggle" data-toggle="dropdown">Graph concepts <b class="caret"></b></a>
+      	<ul class="dropdown-menu">
+        	<li><a href="clustering.html">Clustering</a></li>
+        	<li><a href="betweenness.html">Betweenness</a></li>
+        	<li><a href="eigenvalue.html">Principal eigenvalue</a></li>
+        	<li><a href="influence.html">Influence</a></li>
+      	</ul>
+	  </li>
+	  <li><a href="references.html">References</a></li>
+    </ul>
+  </div>
+</div>
+
 <div class="container">
- 	<h1>Largest eigenvalue</h1>
+ 	<h1>Principal eigenvalue</h1>
  	
- 	<p>The largest eigenvalue of the adjacency matrix lies between the average degree of the graph and the maximum degree. The more it approaches the average degree, <strong>the more balanced the graph is</strong>. The more it approaches the maximum degree, the more connection imbalance there is.</p>
+ 	<p>The principal eigenvalue of the adjacency matrix <a href="http://www.cs.yale.edu/homes/spielman/561/lect03-12.pdf">lies between</a> the average degree of the graph and the maximum degree. The more it approaches the average degree, <strong>the more balanced the graph is</strong>. The more it approaches the maximum degree, the more connection imbalance there is.</p>
  	
  	<p>Both <strong>graph A</strong> and <strong>graph B</strong> have the same number of nodes, edges, average degree, and no clear <a href='betweenness.html'>central</a> nodes. <i>However note how their maximum eigenvalue differs.</i></p>
  	
  	<div class="alert alert-info">
  	<p>In the case of unweighted graphs, this value is not so meaningful. But in the case of weighted relationships, it can raise relevant outliers. For instance, imagine a relationship of bank accounts where money is transferred from one account to another. 
- 	The largest eigenvalue could signal communities where a large amount of money is transferred only to few accounts.</p>
+ 	The largest eigenvalue could signal communities where a large amount of money is transferred only to few accounts. If this is strange or not, will depend on the context.</p>
  	</div>
  	 
  	<a href="javascript:renderGraph(sys, 'A');">Graph A</a> - <a href="javascript:render(sys, 'B');">Graph B</a> 

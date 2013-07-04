@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<!-- Le styles -->
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+<title>Graph outlier detection tutorial</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="Pere Ferrera Bertran (Datasalt Systems S.L.)">
+
+<script src="lib/jquery.js"></script>
+<script src="lib/bootstrap.min.js"></script>
+<script src="lib/arbor.js"></script>
+<script src="lib/jsapi.js"></script>
+<script src="graphs.js"></script>
+<script src="stats.js"></script>
+<script src="renderer.js"></script>
+
+<script>
+google.load('visualization', '1.0', {'packages':['corechart']});
+google.setOnLoadCallback(drawCharts);
+
+function doMouseDown(e) {
+	var pos = $("#viewport").offset();
+	console.log(sys.nearest(arbor.Point(e.pageX-pos.left, e.pageY-pos.top)).node.name);
+}
+
+function renderGraph(sys) {
+	
+}
+
+function drawCharts() {
+	// create the graph as a JavaScript object
+    var graph = {};
+
+    biConnection(graph, "a", "b");
+    biConnection(graph, "b", "c");
+    biConnection(graph, "c", "d");
+    biConnection(graph, "c", "cc");
+    biConnection(graph, "d", "e");
+    biConnection(graph, "d", "f");
+    biConnection(graph, "d", "g");
+    biConnection(graph, "g", "f");
+    biConnection(graph, "g", "j");
+    biConnection(graph, "e", "i");
+    biConnection(graph, "f", "i");
+    biConnection(graph, "f", "k");
+    biConnection(graph, "k", "l");
+    biConnection(graph, "k", "m");
+    biConnection(graph, "s", "n");
+    biConnection(graph, "s", "o");
+    biConnection(graph, "s", "p");
+    biConnection(graph, "s", "r");
+    biConnection(graph, "p", "q");
+    biConnection(graph, "p", "z");
+    biConnection(graph, "p", "x");
+    biConnection(graph, "p", "zz");
+    biConnection(graph, "p", "zzz");
+    biConnection(graph, "p", "d");
+    biConnection(graph, "i", "t");
+    biConnection(graph, "t", "u");
+    biConnection(graph, "t", "v");
+    biConnection(graph, "t", "w");
+    biConnection(graph, "v", "u");
+    biConnection(graph, "w", "v");
+    biConnection(graph, "v", "w");
+    biConnection(graph, "u", "w");
+	
+	for(var node in graph) {
+	    sys.addNode(node, {label:node});
+	    for(var neighbor in graph[node]) {
+	    	sys.addEdge(node, neighbor);
+	    }
+	}
+	
+	// calculate number of nodes
+	var nodes = 0;
+	// create a convenient lookup by node index
+	var nodeByIndex = {};
+	for(var node in graph) {
+		nodeByIndex[nodes] = node;
+		nodes++;
+	}
+
+	var features = computeFeatures(graph);
+	var rankInfo = largestEigenValue(graph, nodeByIndex);
+	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
+	
+    mainStats(graph, features, rankInfo, centrality, true, true, true);
+
+    features.nodeFeatures.sort(function(a, b) {
+    	return a.degree - b.degree;	
+    });
+    
+    var data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Degree');
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].degree ]);
+    }
+	data.addRows(array);
+
+    var chart = new google.visualization.LineChart(document.getElementById('chart'));
+    chart.draw(data, { width: 600, heigth: 300 });
+    
+    data = new google.visualization.DataTable();
+
+    var x = [], y = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	x[i] = features.nodeFeatures[i].degree;
+    	y[i] = features.nodeFeatures[i].egonetLinks;
+    }
+
+	regression = leastSquares(x, y);
+
+    data.addColumn('number', 'Degree');
+    data.addColumn('number', 'Egonet size');
+    data.addColumn('number', 'Expected egonet size');
+
+    var array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].degree, features.nodeFeatures[i].egonetLinks + 1, roundToTwo(regression.a * features.nodeFeatures[i].degree + regression.b) ]);
+    }
+	data.addRows(array);
+    
+    chart = new google.visualization.LineChart(document.getElementById('chart_2'));
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" }, hAxis : { title: 'Degree' }, vAxis : { title: 'Egonet size' } });
+
+    data = new google.visualization.DataTable();
+    data.addColumn('string', 'Node');
+    data.addColumn('number', 'Egonet size');
+    data.addColumn('number', 'Expected egonet size');
+
+    array = [];
+    for(var i = 0; i < features.nodeFeatures.length; i++) {
+    	array.push([features.nodeFeatures[i].node, features.nodeFeatures[i].egonetLinks + 1, roundToTwo(regression.a * features.nodeFeatures[i].degree + regression.b) ]);
+    }
+	data.addRows(array);
+    
+	chart = new google.visualization.LineChart(document.getElementById('chart_3'));
+    chart.draw(data, { width: 600, heigth: 300, chartArea : { left:0, top:10, width:"60%" } });
+
+}
+
+function step(st) {
+	if(st == 1) {
+		$("#t1").html("Degree distribution");
+		$("#s1").toggle();
+		$("#s2").toggle();
+	}
+	if(st == 2) {
+		$("#t2").html("Egonet size regression (EDPW)");
+		$("#s3").toggle();
+	}
+	if(st == 3) {
+		$("#influencers").toggle();
+		$("#w1").toggle();
+		$("#w2").toggle();
+	}
+}
+</script>
+</head>
+<body>
+<div class="navbar navbar-inverse">
+  <div class="navbar-inner">
+    <a class="brand" href="index.html">What's strange?</a>
+    <ul class="nav">
+      <li class="active"><a href="socialnetwork.html">Social network</a></li>
+      <li><a href="financialnetwork.html">Financial transactions</a></li>
+      <li class="dropdown">
+      	<a href="#" class="dropdown-toggle" data-toggle="dropdown">Graph concepts <b class="caret"></b></a>
+      	<ul class="dropdown-menu">
+        	<li><a href="clustering.html">Clustering</a></li>
+        	<li><a href="betweenness.html">Betweenness</a></li>
+        	<li><a href="eigenvalue.html">Principal eigenvalue</a></li>
+        	<li><a href="influence.html">Influence</a></li>
+      	</ul>
+	  </li>
+	  <li><a href="references.html">References</a></li>
+    </ul>
+  </div>
+</div>
+
+<div class="container">
+
+ 	<h1>Social network: What's strange?</h1>
+ 	
+ 	<p>The following imaginary social graph represents a micro-community of friends in a social network. </p>
+	<div class="row">
+  		<div class="span8"><canvas id="viewport" width="800" height="600"></canvas></div>
+
+  		<div class="span4">
+  			<div id="stats">
+  				<h3>Overall stats:</h3>
+  				<div id="main-stats">
+  				</div>
+  				<p>A lot of numbers that may mean really nothing on a big scale ...</p>
+  				<div id="w1">
+  					<p><a href="#influencers" onClick="javascript:step(3);">Want to see more stats?</a></p>
+  				</div>
+  				<div id="influencers" style="display:none">
+  				</div>  				
+  				<div id="w2" style="display:none">
+  					<p><i>But we were looking for outliers, weren't we?</i></a></p>
+  				</div>
+  			</div>
+  		</div>
+	</div>
+	
+	<div>
+		<h2 id="t1"><a href="#s1" onClick="javascript:step(1);">What about the degree distribution?</a></h2>
+	
+		<div id="s1" class="row" style="display:none">
+			<div class="span7">
+				<div id="chart">
+				</div>
+			</div>
+			<div id="explanation" class="span4">
+				<p>The degree distribution shows nothing interesting. Some nodes will have far more connections than the rest, and there is nothing
+				strange in that. Or can't Lady Gaga have 38M followers on Twitter? A long tail of nodes will have very few connections as well, and that's also pretty normal.</p>
+				
+				<p>At the end of the day, the degree distribution of a social network will be just some kind of zipfian function.</p>   
+			</div>
+		</div>
+
+		<div id="s2" style="display:none">
+			<h2 id="t2"><a href="#s3" onClick="javascript:step(2);">What outliers are there then?</a></h2>
+		</div>
+		
+		<div id="s3" style="display:none">
+			<div class="alert alert-info">
+				<p>However, when comparing the degree of a node with the size of its egonet, relevant outliers may arise. It is intuitive to think that the size of a node's egonet
+				will increase with its degree. In fact, <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">this paper suggests it follows a power law</a>.</p>
+				<p>By running a regression (using min. squares) on the egonet size based on the degree, we obtain an "<i>expected egonet size</i>" line. Using this
+				line, we see now two types of interesting outliers:</p>
+				
+				<ul>
+					<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artifically connected (e.g. spam, fake accounts that are interlinked for gaining influence in a network).</li>
+					<li>Nodes who have <strong>far less connections</strong> in its egonet than expected: These may be nodes who randomly and massively connect to other nodes, whose activity in a social network is not pure or legitimate. However, some profiles such as professional recruiters may fall into this category as well.</li> 
+				</ul>
+			</div>
+			
+			<div class="row">
+				<div class="span6">
+					<div id="chart_2">
+					</div>
+				</div>
+				<div class="span6">
+					<div id="chart_3">
+					</div>
+				</div>
+			</div>
+			
+			<h3>Did you know?</h3>
+			
+			<p>The idea of performing a regression on the Degree versus the Egonet size is presented in <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">this paper</a> under the name "Egonet Density Power Law", and has been tested with several datasets.</p>
+			<p>The above graphs are directly related to the clustering coefficient of the egonet.</p>
+			<p>In this <a href="http://www.cs.cmu.edu/~ukang/papers/HeigenPAKDD2011.pdf">paper</a> an study showed that the number of triangles in an egonet proved a good measure
+			for spam profile detection, and they validate their hypothesis with Twitter data, successfully discriminating between popular profiles and artifically interlinked spam accounts.</p>
+			<p>For more references, go to the <a href="references.html">references</a> section.</p>  
+			
+			<a href="financialnetwork.html" class="pull-right">Next &gt;&gt;</a>
+		</div>
+	</div>
+
+</div>
+</body>
+</html>

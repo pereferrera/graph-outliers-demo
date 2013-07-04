@@ -7,11 +7,6 @@
 
 <!-- Le styles -->
 <link href="css/bootstrap.css" rel="stylesheet">
-<style>
-  body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-  }
-</style>
 <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
 <title>Graph outlier detection tutorial</title>
@@ -51,9 +46,12 @@ function weightedConnection(graph, from, to, weight) {
 	graph[to][from] = weight;
 }
 
+var graph, nodes, nodeByIndex, features, rankInfo, centrality;
+
 function drawCharts() {
 	// create the graph as a JavaScript object
-    var graph = {};
+
+	graph = {};
 	
     weightedConnection(graph, "a", "b", 1);
     weightedConnection(graph, "a", "c", 0.5);
@@ -99,17 +97,21 @@ function drawCharts() {
 	}
 	
 	// calculate number of nodes
-	var nodes = 0;
+	nodes = 0;
 	// create a convenient lookup by node index
-	var nodeByIndex = {};
+	nodeByIndex = {};
 	for(var node in graph) {
 		nodeByIndex[nodes] = node;
 		nodes++;
 	}
+	
+	computeFeaturesDrawCharts();
+}
 
-	var features = computeFeatures(graph);
-	var rankInfo = largestEigenValue(graph, nodeByIndex);
-	var centrality = betweennessCentrality(graph, nodeByIndex, nodes);
+function computeFeaturesDrawCharts() {
+	features = computeFeatures(graph);
+	rankInfo = largestEigenValue(graph, nodeByIndex);
+	centrality = betweennessCentrality(graph, nodeByIndex, nodes);
 	
     mainStats(graph, features, rankInfo, centrality, true, true, true);
 
@@ -197,24 +199,51 @@ function step(st) {
 		sys.pruneEdge(sys.getEdges("q", "f")[0]);
 		sys.pruneEdge(sys.getEdges("i", "c")[0]);
 		sys.pruneEdge(sys.getEdges("c", "i")[0]);
+		delete graph["f"].q;
+		delete graph["q"].f;
+		delete graph["i"].c;
+		delete graph["c"].i;
+		computeFeaturesDrawCharts();
 		$("#t1").html("Look at the suspicious community that just arised... ");
-		$("#chart").html("<p>The community around (k, l, m, g, i) is suspicious. It is highly clustered and its pattern may show several kinds of fraud: washing money, tax evasion through intermediate accounting, ... ");
-		$("#explanation").html("<p><i>These groups of accounts may be hidden inside the complex graph of transactions, they might not be regarded as suspicious by traditional metrics. However, by deeply analyzing the relations between them, they may be unraveled.</i></p>");
+		$("#chart").html("<p>The community around (k, l, m, g, i) is suspicious: it is highly clustered - relative to the rest of the micro-world - and its pattern may show several kinds of fraud: <a href='http://en.wikipedia.org/wiki/Money_laundering'>money laundering</a>, tax evasion through intermediate accounting, and so on.");
+		$("#explanation").html("");
 		$("#s2").toggle();
 		$("#s3").toggle();
 		$("#s4").toggle();
 		$("#s5").toggle();
+		$("#end").toggle();
 	}
 }
 </script>
 </head>
 <body>
+<div class="navbar navbar-inverse">
+  <div class="navbar-inner">
+    <a class="brand" href="index.html">What's strange?</a>
+    <ul class="nav">
+      <li><a href="socialnetwork.html">Social network</a></li>
+      <li class="active"><a href="financialnetwork.html">Financial transactions</a></li>
+      <li class="dropdown">
+      	<a href="#" class="dropdown-toggle" data-toggle="dropdown">Graph concepts <b class="caret"></b></a>
+      	<ul class="dropdown-menu">
+        	<li><a href="clustering.html">Clustering</a></li>
+        	<li><a href="betweenness.html">Betweenness</a></li>
+        	<li><a href="eigenvalue.html">Principal eigenvalue</a></li>
+        	<li><a href="influence.html">Influence</a></li>
+      	</ul>
+	  </li>
+	  <li><a href="references.html">References</a></li>
+    </ul>
+  </div>
+</div>
+
 <div class="container">
- 	<h1>Financial transactions: What is strange?</h1>
+ 	<h1>Financial transactions: What's strange?</h1>
  	
 <!-- http://linkanalysisnow.com/2009/04/visualizing-financial-information.html -->
 <!-- http://core.kmi.open.ac.uk/display/5827759 -->
 
+	<p>The following imaginary graph represents a micro-world where several accounts send / receive money between them.</p>
  	<i>Edge weights represent the total amount of money flowing between two accounts (graph is undirected for simplicity).</i>
  	
 	<div class="row" id="main">
@@ -251,6 +280,14 @@ function step(st) {
 				company with a huge client base may receive money from many nodes, and still be legitimate.</p> 
 			</div>
 		</div>
+		
+		<div id="end" style="display:none">
+		
+		<h3>Did you know?</h3>
+		
+		<p>Fraud is a very complex subject which <a href="http://arxiv.org/pdf/1009.6119&embedded=true&embedded=true">has been tackled by various techniques</a>, graph mining is only one of them. There are several kinds of financial fraud, and some techniques may work better than others depending on the case.</p>
+		<p>The lack of public financial data makes it difficult to develop novel technologies around it.</p>
+		</div>
 
 		<div id="s2" style="display:none">
 			<h2 id="t2"><a href="#s3" onClick="javascript:step(2);">What outliers are there then?</a></h2>
@@ -258,7 +295,7 @@ function step(st) {
 		
 		<div id="s3" style="display:none">
 			<p>We can use a similar idea to the one in the social network example for finding strange egonets related to one account.
-			Particularly, we can run a regression on the <a href="eigenvalue.html">principal eigenvalue</a>, which is <a href="#">also proven to follow a power law</a>.
+			Particularly, we can run a regression on the <a href="eigenvalue.html">principal eigenvalue</a>, which is <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">also suggested to follow a power law</a>.
 			What this will tell us is which egonets in our dataset deviate too much from the regression line, either having anomalous imbalance in the flow or too much, "artificial" balance.</p>
 			
 			<p>As we see, outliers after the regression don't show up as easily. There is one node which presents some relative imbalance in its egonet (f), but this might be well explained.
@@ -281,17 +318,21 @@ function step(st) {
 		</div>
 		
 		<div id="s5" style="display:none">
-			<p>In the social network example we used a regression somehow related to the <a href="clustering.html">clustering</a> index of the egonet. In this case,
-			the same idea could apply for detecting strangely inter-related accounts (accounts which intensively transfer money between them), but it might well lead to false positives: think of some examples of legitimate triangles (<i>a company
-			pays recurrently to one account which in turn pays recurrently to a real estate company which in turn pays the first company</i>).</p>
-			
-			<p>However, it is a well-known fact that <a href="#">there are clustering patterns</a> in financial fraud, so <strong>can we do better
-			in finding anomalous clusters of inter-related accounts?</strong>.</p>
-			
-			<p>A way of looking at this problem would be <a href="#">community detection</a>. We could split the graph into disjoint communities and analyze
-			each of them. One simple method for community detection consists in iteratively removing edges with high <a href="betweenness.html">betweennes</a> (<i>reference to the method name here</i>).</p>
-			
+			<div class="alert alert-info">
+				<p>In the social network example we used a regression somehow related to the <a href="clustering.html">clustering</a> index of the egonet. In this case,
+				the same idea could apply for detecting strangely inter-related accounts (accounts which intensively transfer money between them), but it might well lead to false positives: think of some examples of legitimate triangles (<i>a company
+				pays recurrently to one account which in turn pays recurrently to a real estate company which in turn pays the first company</i>).</p>
+				
+				<p>However, this paper suggests that <a href="http://core.kmi.open.ac.uk/display/5827759">there are clustering patterns</a> in financial fraud, so <strong>can we do better
+				in finding anomalous clusters of inter-related accounts?</strong>.</p>
+	
+				<p>We suggest here a way of looking at this problem: <a href="http://en.wikipedia.org/wiki/Community_structure">community detection</a>. We could split the graph into disjoint communities and analyze
+				each of them. One simple method for community detection consists in iteratively removing edges with high <a href="betweenness.html">betweennes</a> (<i>the <a href='http://en.wikipedia.org/wiki/Girvan%E2%80%93Newman_algorithm'>Girvan-Newman algorithm</a></i>).</p>
+			</div>
+						
 			<center><h2><a href="#main" onClick="javascript:step(6);">Click to remove the two edges with higher betweennes!</a></h2></center>
+			
+			<a href="references.html" class="pull-right">References &gt;&gt;</a>
 		</div>
 	</div>
 

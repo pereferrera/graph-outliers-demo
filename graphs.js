@@ -197,7 +197,7 @@ function largestEigenValue(graph, nodeByIndex) {
 			vect[i] = vect[i] / norm;
 		}
 		iter++;
-	} while(iter < nodes - 1 && Math.abs(norm - lastNorm) > 0.001);
+	} while(iter < nodes - 1 && Math.abs(norm - lastNorm) > 0.0001);
 	// vect is the eigenvector and has the "PageRanks" too.
 	
 	for(var i = 0; i < nodes; i++) {
