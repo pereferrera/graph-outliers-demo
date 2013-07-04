@@ -1,5 +1,1 @@
-A simple javascript project to showcase and explain different graph processing concepts applied to outlier detection.
-
-For running the project:
-
-	python -m SimpleHTTPServer 8080
+A simple javascript project to showcase and explain different graph processing concepts applied to outlier detection. Being a pure embedded javascript webapp, you don't need to run a web server for it. Just open "index.html" in your browser of choice.
