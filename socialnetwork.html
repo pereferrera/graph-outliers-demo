@@ -12,7 +12,7 @@
 <title>Graph outlier detection tutorial</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="">
-<meta name="author" content="Pere Ferrera Bertran (Datasalt Systems S.L.)">
+<meta name="author" content="Pere Ferrera Bertran">
 
 <script src="lib/jquery.js"></script>
 <script src="lib/bootstrap.min.js"></script>
@@ -201,14 +201,14 @@ function step(st) {
   				<h3>Overall stats:</h3>
   				<div id="main-stats">
   				</div>
-  				<p>A lot of numbers that may mean really nothing on a big scale ...</p>
+  				<p>A lot of numbers that may mean really nothing on a big scale...</p>
   				<div id="w1">
   					<p><a href="#influencers" onClick="javascript:step(3);">Want to see more stats?</a></p>
   				</div>
   				<div id="influencers" style="display:none">
   				</div>  				
   				<div id="w2" style="display:none">
-  					<p><i>But we were looking for outliers, weren't we?</i></a></p>
+  					<p><i>The concept of influence may be relevant for social network outliers...</i></a></p>
   				</div>
   			</div>
   		</div>
@@ -223,10 +223,10 @@ function step(st) {
 				</div>
 			</div>
 			<div id="explanation" class="span4">
-				<p>The degree distribution shows nothing interesting. Some nodes will have far more connections than the rest, and there is nothing
+				<p>The degree distribution shows <strong>nothing interesting</strong>. Some nodes will have far more connections than the rest, and there is nothing
 				strange in that. Or can't Lady Gaga have 38M followers on Twitter? A long tail of nodes will have very few connections as well, and that's also pretty normal.</p>
 				
-				<p>At the end of the day, the degree distribution of a social network will be just some kind of zipfian function.</p>   
+				<p>At the end of the day, the degree distribution of a social network will likely follow <strong>a power-law distribution.</strong></p>   
 			</div>
 		</div>
 
@@ -235,14 +235,15 @@ function step(st) {
 		</div>
 		
 		<div id="s3" style="display:none">
+			<p><i><strong>Egonet of a node</strong> = Sub-graph made up only by the connections of this node and its neighbors, and all the connections between them.</i>
 			<div class="alert alert-info">
 				<p>However, when comparing the degree of a node with the size of its egonet, relevant outliers may arise. It is intuitive to think that the size of a node's egonet
-				will increase with its degree. In fact, <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">this paper suggests it follows a power law</a>.</p>
-				<p>By running a regression (using min. squares) on the egonet size based on the degree, we obtain an "<i>expected egonet size</i>" line. Using this
+				will increase with its degree. In fact, <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">this paper suggests it follows a power law</a>. This matches the intuition that, the bigger the egonet, the less likely that every node knows every other node.</p>
+				<p>By running a regression (using <a href="http://en.wikipedia.org/wiki/Least_squares">least squares</a>) on the egonet size, we obtain an "<i>expected egonet size</i>" line. Using this
 				line, we see now two types of interesting outliers:</p>
 				
 				<ul>
-					<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artifically connected (e.g. spam, fake accounts that are interlinked for gaining influence in a network).</li>
+					<li>Nodes who have <strong>far more connections</strong> in its egonet than expected: These nodes may be artificially connected (e.g. spam, fake accounts that are interlinked for gaining <a href='influence.html'>influence</a> in a network).</li>
 					<li>Nodes who have <strong>far less connections</strong> in its egonet than expected: These may be nodes who randomly and massively connect to other nodes, whose activity in a social network is not pure or legitimate. However, some profiles such as professional recruiters may fall into this category as well.</li> 
 				</ul>
 			</div>
@@ -261,9 +262,9 @@ function step(st) {
 			<h3>Did you know?</h3>
 			
 			<p>The idea of performing a regression on the Degree versus the Egonet size is presented in <a href="http://www.cs.cmu.edu/~lakoglu/pubs/OddBall_cameraready.pdf">this paper</a> under the name "Egonet Density Power Law", and has been tested with several datasets.</p>
-			<p>The above graphs are directly related to the clustering coefficient of the egonet.</p>
+			<p>The above charts are directly related to the <a href='clustering.html'>clustering coefficient</a> of the egonet.</p>
 			<p>In this <a href="http://www.cs.cmu.edu/~ukang/papers/HeigenPAKDD2011.pdf">paper</a> an study showed that the number of triangles in an egonet proved a good measure
-			for spam profile detection, and they validate their hypothesis with Twitter data, successfully discriminating between popular profiles and artifically interlinked spam accounts.</p>
+			for spam profile detection, and they validate their hypothesis with Twitter data, successfully discriminating between popular profiles and artificially interlinked spam accounts.</p>
 			<p>For more references, go to the <a href="references.html">references</a> section.</p>  
 			
 			<a href="financialnetwork.html" class="pull-right">Next &gt;&gt;</a>
